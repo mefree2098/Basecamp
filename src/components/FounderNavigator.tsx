@@ -13,7 +13,7 @@ import {
   Send,
   Sparkles
 } from "lucide-react";
-import { AnimatedAvatar } from "./AnimatedAvatar";
+import { AnimatedAvatar, type GuidePetState } from "./AnimatedAvatar";
 import { recommendResources, makePlanCards } from "@/lib/recommendations";
 import type {
   AiSettings,
@@ -62,7 +62,6 @@ export function FounderNavigator({
   const [message, setMessage] = useState(profile.goal);
   const [response, setResponse] = useState<WizardResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [hasRun, setHasRun] = useState(false);
 
   const localRecommendations = useMemo(
     () => recommendResources(profile, resources, compact ? 3 : 5),
@@ -77,15 +76,24 @@ export function FounderNavigator({
     compact ? 3 : 4
   );
   const shownPlan = response?.planCards ?? localPlan;
-  const hasResults = hasRun || Boolean(response);
+  const hasResults = Boolean(response);
+  const petState: GuidePetState = loading ? "thinking" : response ? "ready" : "idle";
+  const petStatus = loading
+    ? "Checking Startup State"
+    : response
+      ? response.usedProvider === "mock"
+        ? "Local path ready"
+        : "Guide response ready"
+      : "Ready when you are";
   const assistantText =
-    response?.assistantMessage ??
+    (loading
+      ? "I'm checking the Startup State resource data and turning it into a short first-step plan."
+      : response?.assistantMessage) ??
     "A short answer will appear here with a recommended first stop and a few grounded matches from the Startup State data.";
   const assistantParagraphs = formatAssistantText(assistantText);
 
   async function runNavigator() {
     setLoading(true);
-    setHasRun(true);
     try {
       const stored =
         typeof window === "undefined" ? null : window.localStorage.getItem("basecamp.aiSettings");
@@ -262,7 +270,7 @@ export function FounderNavigator({
       </div>
 
       <aside className={hasResults ? "navigator__results" : "navigator__results navigator__results--empty"}>
-        <AnimatedAvatar />
+        <AnimatedAvatar state={petState} status={petStatus} />
         <div className="assistant-answer">
           <span className="eyebrow">
             <Bot size={15} aria-hidden="true" />

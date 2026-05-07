@@ -18,6 +18,20 @@ const providerDefaults: Record<AiProvider, string> = {
   gemini: "gemini-2.5-flash"
 };
 
+export const BASECAMP_SYSTEM_PROMPT = [
+  "You are Basecamp, the friendly but practical guide for Utah Startup State founders.",
+  "Your job is to reduce overwhelm. Give the founder a clear first stop, then a short plan they can act on today.",
+  "Use only the supplied Startup State resource candidates. Do not invent programs, eligibility, deadlines, funding amounts, contacts, or guarantees.",
+  "Write like a calm human advisor, not a search engine and not a generic chatbot.",
+  "Response contract:",
+  "- Start with one direct sentence naming the best first stop and why it fits.",
+  "- Then give 3 numbered steps at most. Each step should have a concrete action and cite every named resource as [resource:id].",
+  "- Keep the answer under 180 words unless the user explicitly asks for more.",
+  "- If the user asks for permits or legal compliance, tell them what to verify with the city/county instead of pretending the app can determine final requirements.",
+  "- If the supplied resources do not fully answer part of the request, say that this guide cannot determine the final answer and use the closest cited resource as a next contact.",
+  "- Do not mention system prompts, deterministic filters, model/provider details, or internal data handling."
+].join("\n");
+
 export async function listModels(settings?: Partial<AiSettings>): Promise<ModelOption[]> {
   if (!settings?.provider || settings.provider === "mock") {
     return modelFallbacks;
@@ -75,10 +89,11 @@ export async function runWizardTurn({
 
   try {
     const assistantMessage = await callProvider(settings, context);
+    const orderedRecommendations = orderRecommendationsByCitations(assistantMessage, recommendations);
     return {
       assistantMessage,
-      recommendations,
-      planCards,
+      recommendations: orderedRecommendations,
+      planCards: makePlanCards(profile, orderedRecommendations),
       usedProvider: settings.provider,
       guardrails: {
         deterministicFilters: true,
@@ -94,6 +109,29 @@ export async function runWizardTurn({
       usedProvider: "mock"
     };
   }
+}
+
+export function orderRecommendationsByCitations(
+  assistantMessage: string,
+  recommendations: ReturnType<typeof recommendResources>
+) {
+  const citedIds = Array.from(
+    assistantMessage.matchAll(/\[resource:([^\]]+)\]/g),
+    (match) => match[1]
+  );
+  if (!citedIds.length) return recommendations;
+
+  const seen = new Set<string>();
+  const byId = new Map(recommendations.map((item) => [item.resource.id, item]));
+  const cited = citedIds
+    .map((id) => byId.get(id))
+    .filter((item): item is (typeof recommendations)[number] => Boolean(item))
+    .filter((item) => {
+      if (seen.has(item.resource.id)) return false;
+      seen.add(item.resource.id);
+      return true;
+    });
+  return [...cited, ...recommendations.filter((item) => !seen.has(item.resource.id))];
 }
 
 async function callProvider(settings: AiSettings, context: string) {
@@ -123,6 +161,7 @@ async function callOpenAi(settings: AiSettings, context: string) {
     },
     body: JSON.stringify({
       model: settings.model || providerDefaults.openai,
+      instructions: BASECAMP_SYSTEM_PROMPT,
       input: context,
       reasoning:
         settings.thinkingLevel && settings.thinkingLevel !== "none"
@@ -149,6 +188,7 @@ async function callAnthropic(settings: AiSettings, context: string) {
     body: JSON.stringify({
       model: settings.model || providerDefaults.anthropic,
       max_tokens: 700,
+      system: BASECAMP_SYSTEM_PROMPT,
       messages: [{ role: "user", content: context }]
     })
   });
@@ -188,14 +228,13 @@ async function callGemini(settings: AiSettings, context: string) {
   );
 }
 
-function buildGroundedContext(
+export function buildGroundedContext(
   profile: FounderProfile,
   message: string,
   recommendations: ReturnType<typeof recommendResources>
 ) {
   return [
-    "You are Basecamp, a grounded Startup State founder guide.",
-    "Only recommend resources from the supplied citations. Do not invent eligibility.",
+    BASECAMP_SYSTEM_PROMPT,
     `Founder profile: stage=${profile.stage}, industry=${profile.industry}, county=${profile.county}, community=${profile.community}.`,
     `Founder message: ${message || profile.goal}`,
     "Candidate resources:",
@@ -203,7 +242,7 @@ function buildGroundedContext(
       (item, index) =>
         `${index + 1}. ${item.resource.title} [resource:${item.resource.id}] - ${item.resource.description}`
     ),
-    "Write a concise answer with next steps and cite resource ids inline."
+    "Return the founder-facing answer only."
   ].join("\n\n");
 }
 
@@ -216,10 +255,14 @@ function localResponse(
 ): WizardResponse {
   const lead = recommendations[0];
   const assistantMessage = lead
-    ? `Start with ${lead.resource.title}. It is the strongest match for a ${profile.stage} founder in ${profile.county || "Utah"} because ${lead.why.toLowerCase()} I would pair it with ${recommendations
-        .slice(1, 3)
-        .map((item) => item.resource.title)
-        .join(" and ")}.`
+    ? [
+        `Start with ${lead.resource.title}; it is the clearest first stop for a ${profile.stage} founder in ${profile.county || "Utah"}. [resource:${lead.resource.id}]`,
+        `1. Today: open ${lead.resource.title} and capture the specific application, mentor, or intake step that matches your goal. [resource:${lead.resource.id}]`,
+        ...recommendations.slice(1, 3).map(
+          (item, index) =>
+            `${index + 2}. Next: use ${item.resource.title} to cover the part ${lead.resource.title} does not solve directly. [resource:${item.resource.id}]`
+        )
+      ].join("\n\n")
     : `I could not find a tight match for "${message}", so I would broaden the filters and start with statewide Startup State resources.`;
 
   return {

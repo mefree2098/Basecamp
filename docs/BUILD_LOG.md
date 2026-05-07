@@ -33,7 +33,9 @@ Use a single containerized Next.js application instead of the initial EKS-style 
 - Changed Codex sign-in UX to match the CLI-style local flow: local Basecamp can ask the backend to open the generated OpenAI auth URL in the system browser, keep the Codex listener alive, poll auth/model status automatically, and reserve callback paste as a hidden fallback only when a pending login exists.
 - Reworked the first-run product surface after re-reading the AI Builder Day brief: the home page now leads with one calm founder question, guided mode shows only stage/county/goal, manual mode reveals the full filters, resource/map/admin depth lives behind navigation, and AI settings are reachable only from the Admin surface.
 - Fixed Codex chat turns for `@openai/codex` 0.129.0 by reading the nested `thread.id`, sending the current `text_elements` input shape, and waiting for streamed `item/agentMessage/delta` plus `turn/completed` notifications before rendering the final answer.
-- Cropped the generated iconography sheet into separate app-icon and guide-avatar assets so the header/favicons use the real Basecamp icon and the assistant matches the prototype character instead of the temporary CSS face.
+- Cropped the generated iconography sheet into a proper app icon for the header/favicons.
+- Replaced the static/bobbing assistant image with a stateful Basecamp guide pet component modeled after Codex pet behavior: idle, thinking, ready, speaking, and error states use different motion, face, orbit, status text, and reduced-motion-safe CSS.
+- Strengthened the Basecamp guide prompt so provider-backed answers must reduce overwhelm, name a clear first stop, cite every named resource, avoid invented eligibility/compliance claims, and stay concise.
 - Verified the app with lint, typecheck, unit tests, production build, npm audit, Playwright smoke test, and manual Playwright UI passes across desktop/mobile.
 - Initialized git, created private GitHub repo `mefree2098/Basecamp`, pushed `main`, and confirmed GitHub CI passed.
 - Kept the Azure Container App workflow manual-only until Azure secrets are configured, so normal pushes run CI without a failing deploy job.
@@ -48,6 +50,7 @@ Use a single containerized Next.js application instead of the initial EKS-style 
 - `GET /api/ai/codex-models?startLogin=1&openBrowser=1` detects existing Codex auth without requiring manual callback paste; clicking Sign in in the admin UI switches to Codex mode and reports the authenticated model catalog.
 - `POST /api/ai/chat` with `provider=codexPath` now returns a real Codex guide answer for the default founder prompt instead of falling back with `missing field threadId`.
 - Browser QA on `/` confirms the simplified guided first view has no top-level AI nav/settings duplicate, no initial resource/map wall, a distinct manual filter mode, and no visible Codex thread error after submit.
+- Browser QA on `/` confirms the assistant is now a stateful guide pet rather than an image bounce: it shows an idle status before submission, switches to a thinking state while the request runs, and shows a ready state after the answer renders.
 
 ## Next Steps
 
