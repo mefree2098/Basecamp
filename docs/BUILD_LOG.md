@@ -1,0 +1,55 @@
+# Basecamp Build Log
+
+This file is the continuity thread for future Codex runs. Keep it current when the app changes.
+
+## Source Context Ingested
+
+- `basecampbuild.md`: production blueprint for Startup State founder navigator, resource search, startup map, company claims, admin publishing, AI guardrails, and deployment.
+- `codexpath.md`: Codex app-server integration model, auth modes, model discovery, hosted callback completion, writable `CODEX_HOME`, and file-backed credential storage.
+- AI Builder Day brief: https://startupstate.netlify.app/?utm_source=luma
+- Live Startup State site IA: https://startup.utah.gov/
+- Resource CSV: 213 seeded records copied to `data/resources.csv`.
+- Map CSV: 222 seeded company records copied to `data/companies.csv`.
+- Reference map: https://www.pampam.city/utah-startup-map-rtqSlvDvpOKV8Y5VrdZN
+
+## Architecture Decision
+
+Use a single containerized Next.js application instead of the initial EKS-style plan. The user explicitly prioritized simplicity, low hosting cost, local operation, and likely Azure deployment. This keeps the prototype cheap and portable while preserving clear seams for Postgres, managed object storage, and queue workers later.
+
+## Completed
+
+- Set up Next.js App Router with TypeScript, ESLint, Vitest, Playwright config, Dockerfile, and GitHub Actions-ready scripts.
+- Added seed ingestion for Startup State resources and Utah startup companies.
+- Built founder navigator with deterministic prefiltering, guided/manual modes, cited recommendations, local plan cards, and provider-backed AI fallback.
+- Built manual resource explorer with search and filters.
+- Built low-cost Utah startup map using projected seeded address coordinates and no required map API key.
+- Built company profile pages and self-service company draft submission flow.
+- Built admin import/review console for non-technical CSV updates without redeployment.
+- Built AI settings UI for OpenAI API key, Codex path, Anthropic, Gemini, model selection, and thinking level.
+- Ported a server-side Codex app-server integration scaffold with bundled `@openai/codex`, writable home resolution, file credential store enforcement, model listing, auth health, and hosted login endpoints.
+- Added local tests for recommendation ranking and model catalog.
+- Fixed visual QA issues found after launch: company map loader now handles trimmed CSV headers, duplicate company slugs are uniqued, compact grid sections no longer stretch headings, and company draft submission returns clean validation errors.
+- Verified the app with lint, typecheck, unit tests, production build, npm audit, Playwright smoke test, and manual Playwright UI passes across desktop/mobile.
+- Initialized git, created private GitHub repo `mefree2098/Basecamp`, pushed `main`, and confirmed GitHub CI passed.
+- Kept the Azure Container App workflow manual-only until Azure secrets are configured, so normal pushes run CI without a failing deploy job.
+
+## Verification Completed
+
+- `npm run verify`: passed.
+- `npm run test:e2e`: passed.
+- Browser QA fallback: Playwright loaded `/`, `/map`, `/admin/ai`, and `/submit-company`; screenshots were written to `test-results/`; no console errors remained.
+- `GET /api/ai/codex-auth-health`: returns a clean unauthenticated/login-required health response with the effective writable Codex home.
+
+## Next Steps
+
+- Future hardening: replace file-backed overrides with managed Postgres before running multiple writable replicas.
+- Configure Azure secrets and run the manual Azure deployment workflow when ready.
+
+## Deployment Notes
+
+- Local: `npm install && npm run dev`.
+- Single container: use included `Dockerfile`.
+- Azure recommended first: Container Apps or App Service for Containers with persistent storage mounted at `.basecamp-data`.
+- AWS: App Runner or ECS Fargate for the same container.
+- GCP: Cloud Run for the same container.
+- Use managed Postgres when multi-instance writes or larger moderation queues become necessary.

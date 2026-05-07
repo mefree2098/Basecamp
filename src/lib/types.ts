@@ -1,0 +1,111 @@
+export type FounderStage =
+  | "idea"
+  | "validate"
+  | "start"
+  | "grow"
+  | "fund"
+  | "exit";
+
+export type FounderProfile = {
+  stage: FounderStage;
+  industry: string;
+  county: string;
+  community: string;
+  goal: string;
+  mode: "guided" | "manual";
+};
+
+export type Resource = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  communities: string[];
+  industries: string[];
+  locations: string[];
+  topics: string[];
+  stages: FounderStage[];
+  link: string;
+  email?: string;
+  freshness: {
+    status: "seeded" | "reviewed" | "needs_review";
+    reviewedAt?: string;
+    note?: string;
+  };
+};
+
+export type Company = {
+  slug: string;
+  name: string;
+  displayType: string;
+  linkedin?: string;
+  address: string;
+  description: string;
+  website?: string;
+  stage?: string;
+  employees?: string;
+  sector?: string;
+  hiringStatus: "unknown" | "hiring" | "not_hiring";
+  foundedYear?: number;
+  jobsUrl?: string;
+  gallery: string[];
+  coordinates: {
+    lat: number;
+    lng: number;
+    confidence: "city" | "state" | "synthetic";
+  };
+  verificationStatus: "seeded" | "claimed" | "pending";
+};
+
+export type Recommendation = {
+  resource: Resource;
+  score: number;
+  why: string;
+  citations: string[];
+};
+
+export type PlanCard = {
+  title: string;
+  dueWindow: "today" | "7_days" | "30_days" | "90_days";
+  status: "suggested" | "saved" | "done";
+};
+
+export type WizardResponse = {
+  assistantMessage: string;
+  recommendations: Recommendation[];
+  planCards: PlanCard[];
+  usedProvider: string;
+  guardrails: {
+    deterministicFilters: boolean;
+    citationsRequired: boolean;
+    externalBrowsingUsed: boolean;
+  };
+};
+
+export type AiProvider =
+  | "mock"
+  | "openai"
+  | "codexPath"
+  | "anthropic"
+  | "gemini";
+
+export type ThinkingLevel = "none" | "low" | "medium" | "high" | "xhigh";
+
+export type AiSettings = {
+  provider: AiProvider;
+  apiKey?: string;
+  model: string;
+  thinkingLevel: ThinkingLevel;
+  codexPath?: string;
+  codexHome?: string;
+  codexHomeProfile?: "auto" | "azure" | "aws" | "local" | "custom";
+  codexAwsVolumeRoot?: string;
+};
+
+export type ModelOption = {
+  id: string;
+  label: string;
+  provider: AiProvider;
+  supportsThinking: boolean;
+  costHint: "local" | "low" | "medium" | "high" | "unknown";
+};
