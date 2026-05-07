@@ -214,6 +214,67 @@ button {
   gap: 10px;
 }
 
+.session-panel,
+.continue-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.session-panel {
+  grid-template-columns: 1fr;
+  align-items: start;
+  margin-top: 10px;
+}
+
+.session-panel > .ghost-button {
+  justify-self: start;
+}
+
+.session-panel p,
+.continue-panel p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.session-panel strong {
+  display: block;
+  margin-top: 3px;
+}
+
+.session-panel small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
+.session-panel__fields {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(150px, 1.2fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.session-panel__fields input,
+.continue-panel textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.continue-panel textarea {
+  min-height: 78px;
+  padding: 11px;
+  resize: vertical;
+}
+
 .segmented-control {
   margin: 24px 0;
   padding: 4px;
@@ -405,467 +466,45 @@ button {
   align-content: center;
 }
 
-.tour-guide {
-  --guide-accent: var(--teal);
-  --guide-glow: rgba(13, 143, 140, 0.24);
-  --guide-skin: #f2d4c5;
-  --guide-hair: #8f5638;
+.codex-pet {
   display: grid;
   justify-items: center;
-  gap: 9px;
-  width: min(100%, 250px);
+  gap: 10px;
+  width: min(100%, 240px);
   margin: 0 auto;
   padding-top: 14px;
 }
 
-.tour-guide[data-state="thinking"] {
-  --guide-accent: #12a8a2;
-  --guide-glow: rgba(18, 168, 162, 0.34);
+.codex-pet--compact {
+  width: 92px;
+  padding-top: 0;
 }
 
-.tour-guide[data-state="speaking"],
-.tour-guide[data-state="ready"] {
-  --guide-accent: var(--gold);
-  --guide-glow: rgba(199, 149, 50, 0.3);
-}
-
-.tour-guide[data-state="error"] {
-  --guide-accent: var(--redrock);
-  --guide-glow: rgba(185, 71, 53, 0.28);
-}
-
-.tour-guide__status {
+.codex-pet__status {
   min-height: 32px;
   padding: 7px 11px;
   color: var(--ink);
-  border: 1px solid rgba(22, 33, 31, 0.1);
+  border: 1px solid rgba(22, 33, 31, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 10px 28px rgba(22, 33, 31, 0.08);
   font-size: 12px;
   font-weight: 800;
 }
 
-.tour-guide__scene {
-  position: relative;
-  width: 190px;
-  height: 220px;
-  filter: drop-shadow(0 22px 24px rgba(22, 33, 31, 0.17));
+.codex-pet__sprite {
+  width: 164px;
+  height: 181px;
+  background-image: url("/brand/basecamp-guide-spritesheet.png?v=3");
+  background-repeat: no-repeat;
+  background-size: 800% 600%;
+  filter: drop-shadow(0 18px 18px rgba(22, 33, 31, 0.18));
+  image-rendering: pixelated;
 }
 
-.tour-guide--compact {
-  width: 98px;
-  padding-top: 0;
-}
-
-.tour-guide--compact .tour-guide__scene {
-  width: 96px;
-  height: 120px;
-  transform: scale(0.58);
-  transform-origin: top center;
-}
-
-.tour-guide__trail {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 18px;
-  height: 54px;
-  border-bottom: 3px dashed rgba(13, 143, 140, 0.3);
-  border-radius: 0 0 999px 999px;
-  transform: rotate(-4deg);
-}
-
-.tour-guide__pin {
-  position: absolute;
-  width: 13px;
-  height: 13px;
-  border-radius: 999px 999px 999px 2px;
-  background: var(--guide-accent);
-  box-shadow: 0 0 18px var(--guide-glow);
-}
-
-.tour-guide__pin--start {
-  left: 8px;
-  bottom: -9px;
-  transform: rotate(45deg);
-}
-
-.tour-guide__pin--end {
-  right: 10px;
-  bottom: -10px;
-  transform: rotate(45deg);
-  animation: guide-pulse 2.4s ease-in-out infinite;
-}
-
-.tour-guide__spotlight {
-  position: absolute;
-  left: 31px;
-  right: 31px;
-  bottom: 0;
-  height: 18px;
-  border-radius: 999px;
-  background: radial-gradient(ellipse at center, rgba(13, 143, 140, 0.28), rgba(13, 143, 140, 0));
-  animation: guide-shadow 3.8s ease-in-out infinite;
-}
-
-.tour-guide__figure {
-  position: absolute;
-  left: 42px;
-  top: 13px;
-  width: 108px;
-  height: 190px;
-  transform-origin: 50% 78%;
-  animation: guide-breathe 4s ease-in-out infinite;
-}
-
-.tour-guide[data-state="thinking"] .tour-guide__figure {
-  animation: guide-check-map 1.25s ease-in-out infinite;
-}
-
-.tour-guide[data-state="speaking"] .tour-guide__figure,
-.tour-guide[data-state="ready"] .tour-guide__figure {
-  animation: guide-ready 2.6s ease-in-out infinite;
-}
-
-.tour-guide[data-state="error"] .tour-guide__figure {
-  animation: guide-small-shake 0.5s ease-in-out infinite;
-}
-
-.tour-guide__hair {
-  position: absolute;
-  left: 18px;
-  top: 4px;
-  width: 72px;
-  height: 72px;
-  border-radius: 34px 34px 30px 30px;
-  background: linear-gradient(145deg, #b87951 0 32%, var(--guide-hair) 33% 100%);
-}
-
-.tour-guide__hair span {
-  position: absolute;
-  left: -5px;
-  top: 22px;
-  width: 82px;
-  height: 82px;
-  border-radius: 44px 44px 38px 38px;
-  background: linear-gradient(165deg, transparent 0 30%, #7a442e 31% 100%);
-  z-index: -1;
-}
-
-.tour-guide__head {
-  position: absolute;
-  left: 23px;
-  top: 20px;
-  width: 62px;
-  height: 66px;
-  border-radius: 28px 28px 30px 30px;
-  background: var(--guide-skin);
-  box-shadow: inset -8px -8px 0 rgba(192, 115, 82, 0.14);
-}
-
-.tour-guide__head::before {
-  position: absolute;
-  left: 7px;
-  top: -1px;
-  width: 48px;
-  height: 21px;
-  content: "";
-  border-radius: 26px 26px 14px 8px;
-  background: linear-gradient(140deg, #b87951, var(--guide-hair));
-}
-
-.tour-guide__ear {
-  position: absolute;
-  top: 29px;
-  width: 9px;
-  height: 13px;
-  border-radius: 999px;
-  background: #edc5b5;
-}
-
-.tour-guide__ear--left {
-  left: -6px;
-}
-
-.tour-guide__ear--right {
-  right: -6px;
-}
-
-.tour-guide__eye {
-  position: absolute;
-  top: 33px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: #233330;
-  animation: guide-blink 4.8s infinite;
-}
-
-.tour-guide__eye--left {
-  left: 18px;
-}
-
-.tour-guide__eye--right {
-  right: 18px;
-}
-
-.tour-guide__smile {
-  position: absolute;
-  left: 23px;
-  top: 45px;
-  width: 17px;
-  height: 9px;
-  border-bottom: 3px solid #7b3f36;
-  border-radius: 0 0 999px 999px;
-}
-
-.tour-guide[data-state="speaking"] .tour-guide__smile {
-  top: 45px;
-  height: 7px;
-  border: 0;
-  border-radius: 999px;
-  background: #7b3f36;
-  animation: guide-mouth 0.46s ease-in-out infinite;
-}
-
-.tour-guide__cheek {
-  position: absolute;
-  top: 43px;
-  width: 9px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(204, 91, 82, 0.2);
-}
-
-.tour-guide__cheek--left {
-  left: 8px;
-}
-
-.tour-guide__cheek--right {
-  right: 8px;
-}
-
-.tour-guide__neck {
-  position: absolute;
-  left: 45px;
-  top: 78px;
-  width: 18px;
-  height: 20px;
-  border-radius: 0 0 9px 9px;
-  background: #e8bfad;
-}
-
-.tour-guide__torso {
-  position: absolute;
-  left: 22px;
-  top: 91px;
-  width: 65px;
-  height: 72px;
-  border-radius: 20px 20px 14px 14px;
-  background:
-    linear-gradient(90deg, transparent 0 46%, rgba(255, 255, 255, 0.28) 47% 50%, transparent 51%),
-    linear-gradient(145deg, #0c7c79, #095f5d);
-}
-
-.tour-guide__torso::before,
-.tour-guide__torso::after {
-  position: absolute;
-  top: 0;
-  content: "";
-  width: 22px;
-  height: 45px;
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.tour-guide__torso::before {
-  left: 0;
-  clip-path: polygon(0 0, 100% 0, 56% 100%, 0 100%);
-}
-
-.tour-guide__torso::after {
-  right: 0;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 44% 100%);
-}
-
-.tour-guide__scarf {
-  position: absolute;
-  left: 21px;
-  top: -2px;
-  width: 23px;
-  height: 38px;
-  background: linear-gradient(150deg, #e76b4f, var(--redrock));
-  clip-path: polygon(0 0, 100% 0, 78% 100%, 50% 78%, 22% 100%);
-}
-
-.tour-guide__badge {
-  position: absolute;
-  right: 11px;
-  top: 25px;
-  width: 13px;
-  height: 13px;
-  border: 2px solid rgba(255, 255, 255, 0.88);
-  border-radius: 999px;
-  background: var(--gold);
-}
-
-.tour-guide__arm {
-  position: absolute;
-  top: 102px;
-  width: 17px;
-  height: 62px;
-  border-radius: 999px;
-  background: #0b716e;
-  transform-origin: 50% 8%;
-}
-
-.tour-guide__arm--left {
-  left: 14px;
-  transform: rotate(13deg);
-}
-
-.tour-guide__arm--right {
-  right: 9px;
-  transform: rotate(-31deg);
-}
-
-.tour-guide[data-state="ready"] .tour-guide__arm--right,
-.tour-guide[data-state="speaking"] .tour-guide__arm--right {
-  animation: guide-wave 1.25s ease-in-out infinite;
-}
-
-.tour-guide__arm::after {
-  position: absolute;
-  left: 1px;
-  bottom: -8px;
-  width: 15px;
-  height: 15px;
-  content: "";
-  border-radius: 999px;
-  background: var(--guide-skin);
-}
-
-.tour-guide__map {
-  position: absolute;
-  left: -28px;
-  bottom: -7px;
-  width: 40px;
-  height: 29px;
-  border: 2px solid rgba(22, 33, 31, 0.12);
-  border-radius: 4px;
-  background:
-    linear-gradient(118deg, transparent 0 46%, rgba(199, 149, 50, 0.75) 47% 51%, transparent 52%),
-    linear-gradient(90deg, rgba(13, 143, 140, 0.12) 0 33%, rgba(255, 255, 255, 0.88) 34% 66%, rgba(185, 71, 53, 0.12) 67%),
-    #fff;
-  transform: rotate(19deg);
-  box-shadow: 0 8px 12px rgba(22, 33, 31, 0.12);
-}
-
-.tour-guide[data-state="thinking"] .tour-guide__map {
-  animation: guide-map 1.05s ease-in-out infinite;
-}
-
-.tour-guide__leg {
-  position: absolute;
-  top: 157px;
-  width: 16px;
-  height: 31px;
-  border-radius: 0 0 10px 10px;
-  background: #173f3d;
-}
-
-.tour-guide__leg--left {
-  left: 39px;
-  transform: rotate(2deg);
-}
-
-.tour-guide__leg--right {
-  right: 35px;
-  transform: rotate(-2deg);
-}
-
-.tour-guide__leg::after {
-  position: absolute;
-  bottom: -5px;
-  width: 21px;
-  height: 8px;
-  content: "";
-  border-radius: 999px;
-  background: #16211f;
-}
-
-.tour-guide__leg--left::after {
-  left: -8px;
-}
-
-.tour-guide__leg--right::after {
-  right: -8px;
-}
-
-.tour-guide__sign {
-  position: absolute;
-  right: 3px;
-  top: 76px;
-  width: 42px;
-  height: 31px;
-  border: 2px solid rgba(13, 143, 140, 0.36);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.9);
-  transform: rotate(6deg);
-}
-
-.tour-guide__sign span {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  top: 8px;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--guide-accent);
-  box-shadow: 0 8px 0 rgba(13, 143, 140, 0.25);
-}
-
-.tour-guide__sparkles {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-}
-
-.tour-guide[data-state="ready"] .tour-guide__sparkles,
-.tour-guide[data-state="speaking"] .tour-guide__sparkles {
-  opacity: 1;
-}
-
-.tour-guide__sparkles span {
-  position: absolute;
-  display: block;
-  border-radius: 999px;
-  background: var(--guide-accent);
-  box-shadow: 0 0 18px var(--guide-glow);
-}
-
-.tour-guide__sparkles span:nth-child(1) {
-  left: 23px;
-  top: 44px;
-  width: 7px;
-  height: 7px;
-  animation: guide-spark 1.8s ease-in-out infinite;
-}
-
-.tour-guide__sparkles span:nth-child(2) {
-  right: 25px;
-  top: 48px;
-  width: 5px;
-  height: 5px;
-  animation: guide-spark 2.1s 0.25s ease-in-out infinite;
-}
-
-.tour-guide__sparkles span:nth-child(3) {
-  right: 31px;
-  bottom: 52px;
-  width: 6px;
-  height: 6px;
-  animation: guide-spark 2s 0.45s ease-in-out infinite;
+.codex-pet--compact .codex-pet__sprite {
+  width: 86px;
+  height: 86px;
 }
 
 .avatar__caption {
@@ -961,6 +600,23 @@ button {
   align-items: start;
   padding: 10px 0;
   border-top: 1px solid var(--line);
+}
+
+.plan-item {
+  grid-template-columns: 18px 22px minmax(0, 1fr) auto;
+  cursor: pointer;
+}
+
+.plan-item input {
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: var(--teal);
+}
+
+.plan-item--done span {
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
 .plan-item small {
@@ -1252,128 +908,6 @@ button {
   padding-left: 20px;
 }
 
-@keyframes guide-breathe {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0);
-  }
-  50% {
-    transform: translateY(-5px) rotate(0.8deg);
-  }
-}
-
-@keyframes guide-check-map {
-  0%,
-  100% {
-    transform: translateY(-2px) rotate(-1.4deg);
-  }
-  50% {
-    transform: translateY(-7px) rotate(1deg);
-  }
-}
-
-@keyframes guide-ready {
-  0%,
-  100% {
-    transform: translateY(-3px) rotate(-0.6deg);
-  }
-  50% {
-    transform: translateY(-7px) rotate(0.7deg);
-  }
-}
-
-@keyframes guide-small-shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  33% {
-    transform: translateX(-3px);
-  }
-  66% {
-    transform: translateX(3px);
-  }
-}
-
-@keyframes guide-pulse {
-  0%,
-  100% {
-    opacity: 0.75;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-}
-
-@keyframes guide-blink {
-  0%,
-  91%,
-  100% {
-    transform: scaleY(1);
-  }
-  94% {
-    transform: scaleY(0.18);
-  }
-}
-
-@keyframes guide-mouth {
-  0%,
-  100% {
-    width: 13px;
-    height: 5px;
-  }
-  50% {
-    width: 15px;
-    height: 9px;
-  }
-}
-
-@keyframes guide-wave {
-  0%,
-  100% {
-    transform: rotate(-31deg) translateY(0);
-  }
-  50% {
-    transform: rotate(-58deg) translateY(-5px);
-  }
-}
-
-@keyframes guide-shadow {
-  0%,
-  100% {
-    opacity: 0.52;
-    transform: scaleX(0.82);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scaleX(1.05);
-  }
-}
-
-@keyframes guide-map {
-  0%,
-  100% {
-    transform: rotate(19deg) translateY(0);
-  }
-  50% {
-    transform: rotate(11deg) translateY(-3px);
-  }
-}
-
-@keyframes guide-spark {
-  0%,
-  100% {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1458,6 +992,8 @@ button {
   }
 
   .intake-grid,
+  .session-panel,
+  .session-panel__fields,
   .toolbar,
   .resource-grid,
   .stats-grid,

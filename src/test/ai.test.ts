@@ -107,13 +107,13 @@ describe("Basecamp guide prompt", () => {
     expect(first.resource.id).toBe("b");
   });
 
-  it("treats a new iOS app company as a formation path, not a generic resource search", async () => {
+  it("keeps a generic Utah business-starting answer inside Startup State scope", async () => {
     const profile: FounderProfile = {
       stage: "start",
       industry: "Software and Information Technology",
       county: "Salt Lake",
       community: "Any",
-      goal: "I want to create a tech startup where I make iOS apps and publish them.",
+      goal: "I want to turn an idea into a real Utah business. What should I do first?",
       mode: "guided"
     };
     const resources: Resource[] = [
@@ -135,12 +135,6 @@ describe("Basecamp guide prompt", () => {
         "Open a business bank account after entity records and tax ID.",
         "https://www.sba.gov/business-guide/launch-your-business/open-business-bank-account"
       ),
-      formationResource(
-        "basecamp-apple-developer-enrollment",
-        "Apple Developer Program enrollment",
-        "Publish iOS apps as an individual or organization.",
-        "https://developer.apple.com/programs/enroll/"
-      )
     ];
 
     const response = await runWizardTurn({
@@ -153,7 +147,66 @@ describe("Basecamp guide prompt", () => {
     expect(response.assistantMessage).toContain("formation belongs in the first path");
     expect(response.assistantMessage).toContain("EIN");
     expect(response.assistantMessage).toContain("business bank account");
-    expect(response.assistantMessage).toContain("Apple Developer Program enrollment");
+    expect(response.assistantMessage).not.toContain("Apple Developer");
+  });
+
+  it("continues a saved formation path without replacing the original goal", async () => {
+    const profile: FounderProfile = {
+      stage: "start",
+      industry: "Software and Information Technology",
+      county: "Salt Lake",
+      community: "Any",
+      goal: "I want to turn an idea into a real Utah business.",
+      mode: "guided"
+    };
+    const currentPlanCards = [
+      {
+        title: "Choose a business name and entity structure",
+        dueWindow: "today" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Register with Utah, then get the EIN/FEIN",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Open the business bank account after entity records are ready",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      }
+    ];
+
+    const response = await runWizardTurn({
+      settings: { provider: "mock", model: "basecamp-local-guide", thinkingLevel: "medium" },
+      profile,
+      message: "I completed the checked steps. What's next?",
+      resources: [
+        formationResource(
+          "basecamp-startup-state-registration",
+          "Startup State registration and licensure",
+          "Utah registration, legal formation, EIN, and licensing path.",
+          "https://startup.utah.gov/registration/"
+        ),
+        formationResource(
+          "basecamp-irs-ein",
+          "IRS employer identification number",
+          "Federal EIN after forming a legal entity.",
+          "https://www.irs.gov/businesses/small-businesses-self-employed/get-an-employer-identification-number"
+        )
+      ],
+      sessionContext: {
+        completedSteps: ["Choose a business name and entity structure"],
+        currentPlanCards,
+        previousAssistantMessage: "Start with Startup State registration and licensure."
+      }
+    });
+
+    expect(response.assistantMessage).toContain("marked complete");
+    expect(response.planCards).toEqual(currentPlanCards);
+    expect(response.planCards.map((card) => card.title)).not.toContain(
+      "Draft a one-page plan for i completed the checked steps. what's next?"
+    );
   });
 });
 
@@ -166,7 +219,7 @@ function formationResource(id: string, title: string, description: string, link:
     communities: ["Any"],
     industries: ["Software and Information Technology"],
     locations: ["Salt Lake", "Utah"],
-    topics: ["Start a Business", "Registration", "EIN", "Bank Account", "Apple Developer"],
+    topics: ["Start a Business", "Registration", "EIN", "Bank Account"],
     stages: ["start"],
     link,
     freshness: { status: "reviewed" }

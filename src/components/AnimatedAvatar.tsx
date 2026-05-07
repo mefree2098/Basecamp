@@ -1,15 +1,30 @@
 "use client";
 
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Sparkles } from "lucide-react";
 
 export type GuideCompanionState = "idle" | "thinking" | "speaking" | "ready" | "error";
 
+const spriteColumns = 8;
+const spriteRows = 6;
+const spriteFrameSize = 181;
+
 const stateCopy: Record<GuideCompanionState, string> = {
-  idle: "Tour guide ready",
-  thinking: "Mapping your first stop",
-  speaking: "Walking through the path",
-  ready: "Route ready",
+  idle: "Basecamp guide ready",
+  thinking: "Reviewing your path",
+  speaking: "Explaining the route",
+  ready: "Next steps ready",
   error: "Local route ready"
+};
+
+const frameSequence = [0, 1, 2, 3, 4, 5, 6, 7];
+
+const petRows: Record<GuideCompanionState, { row: number; frames: number[]; ms: number }> = {
+  idle: { row: 0, frames: frameSequence, ms: 240 },
+  thinking: { row: 1, frames: frameSequence, ms: 220 },
+  speaking: { row: 2, frames: frameSequence, ms: 200 },
+  ready: { row: 3, frames: frameSequence, ms: 220 },
+  error: { row: 5, frames: frameSequence, ms: 240 }
 };
 
 export function AnimatedAvatar({
@@ -21,61 +36,46 @@ export function AnimatedAvatar({
   state?: GuideCompanionState;
   status?: string;
 }) {
+  const [frameIndex, setFrameIndex] = useState(0);
+  const sequence = useMemo(() => petRows[state], [state]);
+  const frame = sequence.frames[frameIndex % sequence.frames.length];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setFrameIndex((value) => value + 1);
+    }, sequence.ms);
+    return () => window.clearInterval(timer);
+  }, [sequence]);
+
   return (
     <div
-      className={compact ? "tour-guide tour-guide--compact" : "tour-guide"}
+      className={compact ? "codex-pet codex-pet--compact" : "codex-pet"}
       data-state={state}
-      aria-label={`Basecamp tour guide status: ${status ?? stateCopy[state]}`}
+      aria-label={`Basecamp guide status: ${status ?? stateCopy[state]}`}
     >
       {!compact && (
-        <div className="tour-guide__status" aria-live="polite">
+        <div className="codex-pet__status" aria-live="polite">
           {status ?? stateCopy[state]}
         </div>
       )}
-      <div className="tour-guide__scene" aria-hidden="true">
-        <div className="tour-guide__trail">
-          <span className="tour-guide__pin tour-guide__pin--start" />
-          <span className="tour-guide__pin tour-guide__pin--end" />
-        </div>
-        <div className="tour-guide__spotlight" />
-        <div className="tour-guide__figure">
-          <div className="tour-guide__hair">
-            <span />
-          </div>
-          <div className="tour-guide__head">
-            <span className="tour-guide__ear tour-guide__ear--left" />
-            <span className="tour-guide__ear tour-guide__ear--right" />
-            <span className="tour-guide__eye tour-guide__eye--left" />
-            <span className="tour-guide__eye tour-guide__eye--right" />
-            <span className="tour-guide__smile" />
-            <span className="tour-guide__cheek tour-guide__cheek--left" />
-            <span className="tour-guide__cheek tour-guide__cheek--right" />
-          </div>
-          <div className="tour-guide__neck" />
-          <div className="tour-guide__torso">
-            <span className="tour-guide__scarf" />
-            <span className="tour-guide__badge" />
-          </div>
-          <span className="tour-guide__arm tour-guide__arm--left" />
-          <span className="tour-guide__arm tour-guide__arm--right">
-            <i className="tour-guide__map" />
-          </span>
-          <span className="tour-guide__leg tour-guide__leg--left" />
-          <span className="tour-guide__leg tour-guide__leg--right" />
-        </div>
-        <div className="tour-guide__sign">
-          <span />
-        </div>
-        <div className="tour-guide__sparkles">
-          <span />
-          <span />
-          <span />
-        </div>
-      </div>
+      <div
+        className="codex-pet__sprite"
+        style={
+          {
+            backgroundPosition: `-${frame * spriteFrameSize}px -${
+              sequence.row * spriteFrameSize
+            }px`,
+            backgroundSize: `${spriteColumns * spriteFrameSize}px ${
+              spriteRows * spriteFrameSize
+            }px`
+          } as CSSProperties
+        }
+        aria-hidden="true"
+      />
       {!compact && (
         <div className="avatar__caption">
           <Sparkles size={14} aria-hidden="true" />
-          Startup State tour guide
+          16-bit Startup State guide
         </div>
       )}
     </div>

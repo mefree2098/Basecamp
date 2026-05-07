@@ -1,5 +1,5 @@
 import { stageLabels } from "./site-context";
-import type { FounderProfile, Recommendation, Resource } from "./types";
+import type { FounderProfile, PlanCard, Recommendation, Resource } from "./types";
 
 export function recommendResources(
   profile: FounderProfile,
@@ -20,8 +20,7 @@ export function recommendResources(
     .sort((a, b) => {
       if (isFormationIntent(profile)) {
         const formationOrder =
-          formationResourcePriority(profile.goal, a.resource) -
-          formationResourcePriority(profile.goal, b.resource);
+          formationResourcePriority(a.resource) - formationResourcePriority(b.resource);
         if (formationOrder !== 0) return formationOrder;
       }
       return b.score - a.score || a.resource.title.localeCompare(b.resource.title);
@@ -29,7 +28,7 @@ export function recommendResources(
     .slice(0, limit);
 }
 
-export function makePlanCards(profile: FounderProfile, recommendations: Recommendation[]) {
+export function makePlanCards(profile: FounderProfile, recommendations: Recommendation[]): PlanCard[] {
   if (isFormationIntent(profile)) {
     return [
       {
@@ -100,9 +99,6 @@ function scoreResource(profile: FounderProfile, resource: Resource) {
 
   if (isFormationIntent(profile) && isFormationResource(resource)) score += 22;
   if (mentionsBusinessBanking(profile.goal) && /bank account|business bank/.test(text)) score += 18;
-  if (mentionsAppPublishing(profile.goal) && /apple developer|ios|app store|apps/.test(text)) {
-    score += 16;
-  }
 
   if (resource.freshness.status === "needs_review") score -= 6;
   return Math.max(0, score);
@@ -144,7 +140,7 @@ export function isFormationIntent(profile: Pick<FounderProfile, "goal" | "stage"
 
 function isFormationResource(resource: Resource) {
   const text = [resource.title, resource.description, ...resource.topics].join(" ").toLowerCase();
-  return /registration|licensure|legal formation|form a new business|ein|fein|business bank|apple developer|sbdc|score/.test(
+  return /registration|licensure|legal formation|form a new business|ein|fein|business bank|sbdc|score/.test(
     text
   );
 }
@@ -153,16 +149,11 @@ function mentionsBusinessBanking(goal: string) {
   return /bank|finance|money|account|startup costs/i.test(goal);
 }
 
-function mentionsAppPublishing(goal: string) {
-  return /ios|app store|apple|publish|apps?/i.test(goal);
-}
-
-function formationResourcePriority(goal: string, resource: Resource) {
+function formationResourcePriority(resource: Resource) {
   const priorities = new Map<string, number>([
     ["basecamp-startup-state-registration", 1],
     ["basecamp-irs-ein", 2],
     ["basecamp-sba-business-bank-account", 3],
-    ["basecamp-apple-developer-enrollment", mentionsAppPublishing(goal) ? 4 : 8],
     ["basecamp-utah-form-new-business", 5],
     ["basecamp-sbdc-consultation", 6],
     ["basecamp-score-mentor", 7]

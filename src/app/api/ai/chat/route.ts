@@ -22,11 +22,43 @@ const requestSchema = z.object({
     goal: z.string(),
     mode: z.enum(["guided", "manual"])
   }),
-  message: z.string().default("")
+  message: z.string().default(""),
+  sessionContext: z
+    .object({
+      sessionId: z.string().optional(),
+      completedSteps: z.array(z.string()).optional(),
+      currentPlanCards: z
+        .array(
+          z.object({
+            title: z.string(),
+            dueWindow: z.enum(["today", "7_days", "30_days", "90_days"]),
+            status: z.enum(["suggested", "saved", "done"])
+          })
+        )
+        .optional(),
+      previousAssistantMessage: z.string().optional(),
+      history: z
+        .array(
+          z.object({
+            userMessage: z.string(),
+            assistantMessage: z.string(),
+            completedSteps: z.array(z.string()).optional()
+          })
+        )
+        .optional()
+    })
+    .optional()
 });
 
 export async function POST(request: Request) {
-  const parsed = requestSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "A JSON request body is required." }, { status: 400 });
+  }
+
+  const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: { code: "VALIDATION_ERROR", details: parsed.error.flatten() } },

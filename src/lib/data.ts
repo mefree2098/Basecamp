@@ -403,7 +403,7 @@ function foundationalStartupResources(): Resource[] {
         "Direct Utah Division of Corporations path to form a Corporation, LLC, Partnership, Business Trust, DBA, or other business entity.",
       topics: ["Start a Business", "Registration", "Legal Formation", "LLC", "Corporation"],
       stages: ["start"],
-      link: "https://commerce.utah.gov/corporations/"
+      link: "https://commerce.utah.gov/corporations/business-entities/"
     },
     {
       ...seeded,
@@ -419,13 +419,13 @@ function foundationalStartupResources(): Resource[] {
     {
       ...seeded,
       id: "basecamp-sba-business-bank-account",
-      slug: "sba-open-business-bank-account",
-      title: "SBA open a business bank account",
+      slug: "startup-state-business-bank-account",
+      title: "Startup State business bank account step",
       description:
-        "Direct SBA launch step for opening a business bank account once the founder has a legal business name, entity records, and tax ID.",
+        "Direct Startup State operations step for opening a business bank account once the founder has a legal business name, entity records, and tax ID.",
       topics: ["Start a Business", "Taxes and Finance", "Business Operations", "Bank Account"],
       stages: ["start"],
-      link: "https://www.sba.gov/business-guide/launch-your-business/open-business-bank-account"
+      link: "https://startup.utah.gov/business-operations/"
     },
     {
       ...seeded,
@@ -447,18 +447,7 @@ function foundationalStartupResources(): Resource[] {
         "Direct SCORE mentoring path for matching with an experienced volunteer mentor to review a startup idea, launch plan, and first business decisions.",
       topics: ["Mentoring", "Start a Business", "Business Plan", "Marketing and Sales"],
       stages: ["idea", "validate", "start"],
-      link: "https://www.score.org/how-mentoring-works/"
-    },
-    {
-      ...seeded,
-      id: "basecamp-apple-developer-enrollment",
-      slug: "apple-developer-program-enrollment",
-      title: "Apple Developer Program enrollment",
-      description:
-        "Direct Apple enrollment page for publishing iOS apps after the founder has decided whether to enroll as an individual or organization.",
-      topics: ["Start a Business", "Product", "Software", "Apps", "Apple Developer"],
-      stages: ["start"],
-      link: "https://developer.apple.com/programs/enroll/"
+      link: "https://www.score.org/ut/utah/mentors/"
     }
   ];
 }

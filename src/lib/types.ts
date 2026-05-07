@@ -82,6 +82,50 @@ export type WizardResponse = {
   };
 };
 
+export type FounderUser = {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  lastSeenAt: string;
+};
+
+export type SessionTurn = {
+  id: string;
+  createdAt: string;
+  profile: FounderProfile;
+  userMessage: string;
+  assistantMessage: string;
+  usedProvider: string;
+  planCards: PlanCard[];
+  completedSteps: string[];
+  recommendationIds: string[];
+};
+
+export type FounderSession = {
+  id: string;
+  userId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  profile: FounderProfile;
+  completedSteps: string[];
+  planCards: PlanCard[];
+  turns: SessionTurn[];
+};
+
+export type SessionContext = {
+  sessionId?: string;
+  completedSteps?: string[];
+  currentPlanCards?: PlanCard[];
+  previousAssistantMessage?: string;
+  history?: Array<{
+    userMessage: string;
+    assistantMessage: string;
+    completedSteps?: string[];
+  }>;
+};
+
 export type AiProvider =
   | "mock"
   | "openai"
