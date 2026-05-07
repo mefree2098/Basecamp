@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const settings = {
     provider: "codexPath" as const,
-    model: "gpt-5.1-codex",
+    model: "gpt-5.5",
     thinkingLevel: "medium" as const,
     codexPath: url.searchParams.get("codexPath") || undefined,
     codexHome: url.searchParams.get("codexHome") || undefined

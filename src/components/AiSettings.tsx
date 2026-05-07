@@ -63,8 +63,16 @@ export function AiSettings() {
       body: JSON.stringify(redactForTransport(settings))
     });
     const result = (await response.json()) as { models: ModelOption[]; error?: string };
-    setModels(result.models?.length ? result.models : modelFallbacks);
-    setStatus(result.error ?? `Loaded ${result.models?.length ?? 0} model options.`);
+    const nextModels = result.models?.length ? result.models : modelFallbacks;
+    const providerOptions = nextModels.filter((model) => model.provider === settings.provider);
+    const hasSelectedModel = providerOptions.some((model) => model.id === settings.model);
+    setModels(nextModels);
+    if (!hasSelectedModel && providerOptions[0]) {
+      const nextSettings = { ...settings, model: providerOptions[0].id };
+      setSettings(nextSettings);
+      window.localStorage.setItem("basecamp.aiSettings", JSON.stringify(redactForStorage(nextSettings)));
+    }
+    setStatus(result.error ?? `Loaded ${nextModels.length} model options.`);
   }
 
   async function checkCodexHealth() {

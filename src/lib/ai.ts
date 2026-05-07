@@ -13,7 +13,7 @@ import { runCodexChat, listCodexModels } from "./codex/appServer";
 const providerDefaults: Record<AiProvider, string> = {
   mock: "basecamp-local-guide",
   openai: "gpt-5.2",
-  codexPath: "gpt-5.1-codex",
+  codexPath: "gpt-5.5",
   anthropic: "claude-sonnet-4-5",
   gemini: "gemini-2.5-flash"
 };

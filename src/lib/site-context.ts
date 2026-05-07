@@ -84,8 +84,22 @@ export const modelFallbacks: ModelOption[] = [
   },
   {
     provider: "codexPath",
-    id: "gpt-5.1-codex",
-    label: "GPT-5.1 Codex",
+    id: "gpt-5.5",
+    label: "GPT-5.5",
+    supportsThinking: true,
+    costHint: "unknown"
+  },
+  {
+    provider: "codexPath",
+    id: "gpt-5.4",
+    label: "GPT-5.4",
+    supportsThinking: true,
+    costHint: "unknown"
+  },
+  {
+    provider: "codexPath",
+    id: "gpt-5.4-mini",
+    label: "GPT-5.4 Mini",
     supportsThinking: true,
     costHint: "unknown"
   },

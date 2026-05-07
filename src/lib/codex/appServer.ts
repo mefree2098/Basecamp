@@ -18,6 +18,34 @@ type JsonRpcMessage = {
   error?: { message?: string; code?: number };
 };
 
+type CodexAccountReadResult = {
+  authenticated?: boolean;
+  requiresOpenaiAuth?: boolean;
+  email?: string;
+  accountEmail?: string;
+  planType?: string;
+  account?: {
+    type?: string;
+    authenticated?: boolean;
+    email?: string;
+    accountEmail?: string;
+    planType?: string;
+  } | null;
+};
+
+type CodexAccountState = {
+  authenticated: boolean;
+  requiresOpenaiAuth: boolean;
+  accountEmail?: string;
+  planType?: string;
+  accountType?: string;
+};
+
+type CodexModelListResult = {
+  models?: Array<string | { id?: string; name?: string; model?: string; hidden?: boolean }>;
+  data?: Array<string | { id?: string; name?: string; model?: string; hidden?: boolean }>;
+};
+
 let nextId = 1;
 const pendingCodexLogins = new Map<
   string,
@@ -29,10 +57,8 @@ export async function listCodexModels(settings?: Partial<AiSettings>) {
   try {
     const result = (await session.request("model/list", {
       includeHidden: false
-    })) as { models?: Array<string | { id?: string; name?: string }> };
-    return (result.models ?? [])
-      .map((model) => (typeof model === "string" ? model : model.id || model.name || ""))
-      .filter(Boolean);
+    })) as CodexModelListResult;
+    return normalizeCodexModelList(result);
   } finally {
     session.close();
   }
@@ -41,15 +67,10 @@ export async function listCodexModels(settings?: Partial<AiSettings>) {
 export async function readCodexAuthHealth(settings?: Partial<AiSettings>) {
   const session = await CodexAppServerSession.create(settings);
   try {
-    const account = (await session.request("account/read", {
+    const accountResult = (await session.request("account/read", {
       refreshToken: true
-    })) as {
-      authenticated?: boolean;
-      requiresOpenaiAuth?: boolean;
-      email?: string;
-      accountEmail?: string;
-      planType?: string;
-    };
+    })) as CodexAccountReadResult;
+    const account = normalizeCodexAccount(accountResult);
     let models: string[] = [];
     if (account.authenticated) {
       models = await listCodexModels(settings);
@@ -57,11 +78,12 @@ export async function readCodexAuthHealth(settings?: Partial<AiSettings>) {
     return {
       effectiveCodexPath: session.codexPath,
       effectiveCodexHome: session.codexHome,
-      authenticated: Boolean(account.authenticated),
-      requiresOpenaiAuth: Boolean(account.requiresOpenaiAuth),
+      authenticated: account.authenticated,
+      requiresOpenaiAuth: account.requiresOpenaiAuth,
       loginRequired: !account.authenticated,
-      accountEmail: account.accountEmail || account.email,
+      accountEmail: account.accountEmail,
       planType: account.planType,
+      accountType: account.accountType,
       modelCount: models.length,
       sampleModels: models.slice(0, 8),
       worker: {
@@ -106,14 +128,16 @@ export async function runCodexChat(settings: AiSettings, prompt: string) {
 export async function startCodexLogin(settings?: Partial<AiSettings>) {
   const session = await CodexAppServerSession.create(settings);
   try {
-    const account = (await session.request("account/read", {
+    const account = normalizeCodexAccount((await session.request("account/read", {
       refreshToken: true
-    })) as { authenticated?: boolean };
+    })) as CodexAccountReadResult);
     if (account.authenticated) {
       session.close();
       return {
         loginRequired: false,
         authenticated: true,
+        accountEmail: account.accountEmail,
+        planType: account.planType,
         effectiveCodexPath: session.codexPath,
         effectiveCodexHome: session.codexHome
       };
@@ -186,7 +210,7 @@ export async function completeCodexLogin({
   if (account.authenticated) {
     return finish(relayFailed ? "relay-timeout-authenticated" : "relay", {
       relayStatus,
-      accountEmail: account.accountEmail || account.email,
+      accountEmail: account.accountEmail,
       planType: account.planType
     });
   }
@@ -233,6 +257,28 @@ export function validateCodexCallbackUrl(callbackUrl: string) {
   }
 
   return parsed;
+}
+
+export function normalizeCodexAccount(result: CodexAccountReadResult): CodexAccountState {
+  const nested = result.account ?? undefined;
+  const accountEmail = nested?.accountEmail || nested?.email || result.accountEmail || result.email;
+  const planType = nested?.planType || result.planType;
+  const accountType = nested?.type;
+  return {
+    authenticated: Boolean(result.authenticated || nested),
+    requiresOpenaiAuth: Boolean(result.requiresOpenaiAuth),
+    accountEmail,
+    planType,
+    accountType
+  };
+}
+
+export function normalizeCodexModelList(result: CodexModelListResult) {
+  const rawModels = result.models ?? result.data ?? [];
+  return rawModels
+    .filter((model) => typeof model === "string" || !model.hidden)
+    .map((model) => (typeof model === "string" ? model : model.id || model.model || model.name || ""))
+    .filter(Boolean);
 }
 
 class CodexAppServerSession {
@@ -405,18 +451,16 @@ async function forwardCodexLoginCallback(callbackUrl: URL) {
 
 async function waitForCodexAuth(session: CodexAppServerSession) {
   const deadline = Date.now() + Number(process.env.CODEX_LOGIN_AUTH_WAIT_MS || 12_000);
-  let lastAccount: {
-    authenticated?: boolean;
-    email?: string;
-    accountEmail?: string;
-    planType?: string;
-  } = {};
+  let lastAccount: CodexAccountState = {
+    authenticated: false,
+    requiresOpenaiAuth: false
+  };
 
   while (Date.now() < deadline) {
     try {
-      lastAccount = (await session.request("account/read", {
+      lastAccount = normalizeCodexAccount((await session.request("account/read", {
         refreshToken: true
-      })) as typeof lastAccount;
+      })) as CodexAccountReadResult);
       if (lastAccount.authenticated) return lastAccount;
     } catch {
       // The listener may still be writing auth state; keep the pending login alive.

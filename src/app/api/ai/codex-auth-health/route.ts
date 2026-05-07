@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       await readCodexAuthHealth({
         provider: "codexPath",
-        model: "gpt-5.1-codex",
+        model: "gpt-5.5",
         thinkingLevel: "medium",
         codexPath: url.searchParams.get("codexPath") || undefined,
         codexHome: url.searchParams.get("codexHome") || undefined
