@@ -2,14 +2,14 @@
 
 import { Sparkles } from "lucide-react";
 
-export type GuidePetState = "idle" | "thinking" | "speaking" | "ready" | "error";
+export type GuideCompanionState = "idle" | "thinking" | "speaking" | "ready" | "error";
 
-const stateCopy: Record<GuidePetState, string> = {
-  idle: "Ready when you are",
-  thinking: "Checking Startup State",
-  speaking: "Explaining the path",
-  ready: "Path ready",
-  error: "Using local guide"
+const stateCopy: Record<GuideCompanionState, string> = {
+  idle: "Tour guide ready",
+  thinking: "Mapping your first stop",
+  speaking: "Walking through the path",
+  ready: "Route ready",
+  error: "Local route ready"
 };
 
 export function AnimatedAvatar({
@@ -18,46 +18,55 @@ export function AnimatedAvatar({
   status
 }: {
   compact?: boolean;
-  state?: GuidePetState;
+  state?: GuideCompanionState;
   status?: string;
 }) {
   return (
     <div
-      className={compact ? "basecamp-pet basecamp-pet--compact" : "basecamp-pet"}
+      className={compact ? "tour-guide tour-guide--compact" : "tour-guide"}
       data-state={state}
-      aria-label={`Basecamp guide status: ${status ?? stateCopy[state]}`}
+      aria-label={`Basecamp tour guide status: ${status ?? stateCopy[state]}`}
     >
       {!compact && (
-        <div className="basecamp-pet__status" aria-live="polite">
+        <div className="tour-guide__status" aria-live="polite">
           {status ?? stateCopy[state]}
         </div>
       )}
-      <div className="basecamp-pet__stage" aria-hidden="true">
-        <div className="basecamp-pet__orbit">
-          <span />
-          <span />
-          <span />
+      <div className="tour-guide__scene" aria-hidden="true">
+        <div className="tour-guide__trail">
+          <span className="tour-guide__pin tour-guide__pin--start" />
+          <span className="tour-guide__pin tour-guide__pin--end" />
         </div>
-        <div className="basecamp-pet__antenna">
-          <span />
-        </div>
-        <div className="basecamp-pet__body">
-          <div className="basecamp-pet__hood">
-            <div className="basecamp-pet__face">
-              <span className="basecamp-pet__eye" />
-              <span className="basecamp-pet__eye" />
-              <i />
-            </div>
-          </div>
-          <span className="basecamp-pet__wing basecamp-pet__wing--left" />
-          <span className="basecamp-pet__wing basecamp-pet__wing--right" />
-          <div className="basecamp-pet__rock">
-            <span />
+        <div className="tour-guide__spotlight" />
+        <div className="tour-guide__figure">
+          <div className="tour-guide__hair">
             <span />
           </div>
+          <div className="tour-guide__head">
+            <span className="tour-guide__ear tour-guide__ear--left" />
+            <span className="tour-guide__ear tour-guide__ear--right" />
+            <span className="tour-guide__eye tour-guide__eye--left" />
+            <span className="tour-guide__eye tour-guide__eye--right" />
+            <span className="tour-guide__smile" />
+            <span className="tour-guide__cheek tour-guide__cheek--left" />
+            <span className="tour-guide__cheek tour-guide__cheek--right" />
+          </div>
+          <div className="tour-guide__neck" />
+          <div className="tour-guide__torso">
+            <span className="tour-guide__scarf" />
+            <span className="tour-guide__badge" />
+          </div>
+          <span className="tour-guide__arm tour-guide__arm--left" />
+          <span className="tour-guide__arm tour-guide__arm--right">
+            <i className="tour-guide__map" />
+          </span>
+          <span className="tour-guide__leg tour-guide__leg--left" />
+          <span className="tour-guide__leg tour-guide__leg--right" />
         </div>
-        <div className="basecamp-pet__beam" />
-        <div className="basecamp-pet__sparkles">
+        <div className="tour-guide__sign">
+          <span />
+        </div>
+        <div className="tour-guide__sparkles">
           <span />
           <span />
           <span />
@@ -66,7 +75,7 @@ export function AnimatedAvatar({
       {!compact && (
         <div className="avatar__caption">
           <Sparkles size={14} aria-hidden="true" />
-          Grounded guide
+          Startup State tour guide
         </div>
       )}
     </div>

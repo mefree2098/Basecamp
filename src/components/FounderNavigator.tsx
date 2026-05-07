@@ -13,7 +13,7 @@ import {
   Send,
   Sparkles
 } from "lucide-react";
-import { AnimatedAvatar, type GuidePetState } from "./AnimatedAvatar";
+import { AnimatedAvatar, type GuideCompanionState } from "./AnimatedAvatar";
 import { recommendResources, makePlanCards } from "@/lib/recommendations";
 import type {
   AiSettings,
@@ -53,38 +53,45 @@ export function FounderNavigator({
 }) {
   const [profile, setProfile] = useState<FounderProfile>({
     stage: "start",
-    industry: industries[0] ?? "Software and Information Technology",
+    industry: industries.includes("Software and Information Technology")
+      ? "Software and Information Technology"
+      : industries[0] ?? "Software and Information Technology",
     county: counties.includes("Salt Lake") ? "Salt Lake" : counties[0] ?? "Utah",
     community: communities[0] ?? "Any",
-    goal: "Find permits, capital, and a mentor I can talk to this week.",
+    goal: "I want to turn an idea into a real Utah business. What should I do first?",
     mode: "guided"
   });
   const [message, setMessage] = useState(profile.goal);
   const [response, setResponse] = useState<WizardResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const sortedCounties = useMemo(() => sortCountyOptions(counties), [counties]);
+  const activeProfile = useMemo(
+    () => ({ ...profile, goal: message || profile.goal }),
+    [message, profile]
+  );
 
   const localRecommendations = useMemo(
-    () => recommendResources(profile, resources, compact ? 3 : 5),
-    [compact, profile, resources]
+    () => recommendResources(activeProfile, resources, compact ? 3 : 5),
+    [activeProfile, compact, resources]
   );
   const localPlan = useMemo(
-    () => makePlanCards(profile, localRecommendations),
-    [localRecommendations, profile]
+    () => makePlanCards(activeProfile, localRecommendations),
+    [activeProfile, localRecommendations]
   );
   const shownRecommendations = (response?.recommendations ?? localRecommendations).slice(
     0,
-    compact ? 3 : 4
+    compact ? 3 : 5
   );
   const shownPlan = response?.planCards ?? localPlan;
   const hasResults = Boolean(response);
-  const petState: GuidePetState = loading ? "thinking" : response ? "ready" : "idle";
-  const petStatus = loading
-    ? "Checking Startup State"
+  const companionState: GuideCompanionState = loading ? "thinking" : response ? "ready" : "idle";
+  const companionStatus = loading
+    ? "Mapping your first stop"
     : response
       ? response.usedProvider === "mock"
-        ? "Local path ready"
-        : "Guide response ready"
-      : "Ready when you are";
+        ? "Local route ready"
+        : "Guide route ready"
+      : "Tour guide ready";
   const assistantText =
     (loading
       ? "I'm checking the Startup State resource data and turning it into a short first-step plan."
@@ -184,20 +191,12 @@ export function FounderNavigator({
                   ))}
                 </select>
               </label>
-              <label className="select-field">
-                <span>
-                  <MapPin size={15} aria-hidden="true" />
-                  County
-                </span>
-                <select
-                  value={profile.county}
-                  onChange={(event) => setProfile({ ...profile, county: event.target.value })}
-                >
-                  {counties.slice(0, 35).map((county) => (
-                    <option key={county}>{county}</option>
-                  ))}
-                </select>
-              </label>
+              <CountyField
+                id="guided-county-options"
+                value={profile.county}
+                counties={sortedCounties}
+                onChange={(county) => setProfile({ ...profile, county })}
+              />
             </div>
           </div>
         ) : (
@@ -228,17 +227,12 @@ export function FounderNavigator({
                 ))}
               </select>
             </label>
-            <label className="select-field">
-              <span>County</span>
-              <select
-                value={profile.county}
-                onChange={(event) => setProfile({ ...profile, county: event.target.value })}
-              >
-                {counties.slice(0, 35).map((county) => (
-                  <option key={county}>{county}</option>
-                ))}
-              </select>
-            </label>
+            <CountyField
+              id="manual-county-options"
+              value={profile.county}
+              counties={sortedCounties}
+              onChange={(county) => setProfile({ ...profile, county })}
+            />
             <label className="select-field">
               <span>Community</span>
               <select
@@ -270,7 +264,7 @@ export function FounderNavigator({
       </div>
 
       <aside className={hasResults ? "navigator__results" : "navigator__results navigator__results--empty"}>
-        <AnimatedAvatar state={petState} status={petStatus} />
+        <AnimatedAvatar state={companionState} status={companionStatus} />
         <div className="assistant-answer">
           <span className="eyebrow">
             <Bot size={15} aria-hidden="true" />
@@ -328,8 +322,47 @@ function formatProviderLabel(provider?: string) {
   return "Local guide";
 }
 
+function CountyField({
+  id,
+  value,
+  counties,
+  onChange
+}: {
+  id: string;
+  value: string;
+  counties: string[];
+  onChange: (county: string) => void;
+}) {
+  return (
+    <label className="input-field county-combobox">
+      <span>
+        <MapPin size={15} aria-hidden="true" />
+        County
+      </span>
+      <input
+        list={id}
+        value={value}
+        placeholder="Search county"
+        autoComplete="off"
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <datalist id={id}>
+        {counties.map((county) => (
+          <option key={county} value={county} />
+        ))}
+      </datalist>
+    </label>
+  );
+}
+
+function sortCountyOptions(counties: string[]) {
+  return Array.from(new Set(counties.filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
+}
+
 function formatAssistantText(text: string) {
-  const cleaned = text.replace(/\*\*/g, "").replace(/\[(resource:\d+)\]/g, "[$1]");
+  const cleaned = text.replace(/\*\*/g, "").replace(/\s*\[resource:[^\]]+\]/g, "");
   return cleaned
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())

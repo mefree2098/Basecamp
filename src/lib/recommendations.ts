@@ -17,11 +17,39 @@ export function recommendResources(
       };
     })
     .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.resource.title.localeCompare(b.resource.title))
+    .sort((a, b) => {
+      if (isFormationIntent(profile)) {
+        const formationOrder =
+          formationResourcePriority(profile.goal, a.resource) -
+          formationResourcePriority(profile.goal, b.resource);
+        if (formationOrder !== 0) return formationOrder;
+      }
+      return b.score - a.score || a.resource.title.localeCompare(b.resource.title);
+    })
     .slice(0, limit);
 }
 
 export function makePlanCards(profile: FounderProfile, recommendations: Recommendation[]) {
+  if (isFormationIntent(profile)) {
+    return [
+      {
+        title: "Choose a business name and entity structure",
+        dueWindow: "today" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Register with Utah, then get the EIN/FEIN",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Open the business bank account after entity records are ready",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      }
+    ];
+  }
+
   const primary = recommendations[0]?.resource.title ?? "your top Startup State resource";
   return [
     {
@@ -70,6 +98,12 @@ function scoreResource(profile: FounderProfile, resource: Resource) {
     if (text.includes(token)) score += 3;
   }
 
+  if (isFormationIntent(profile) && isFormationResource(resource)) score += 22;
+  if (mentionsBusinessBanking(profile.goal) && /bank account|business bank/.test(text)) score += 18;
+  if (mentionsAppPublishing(profile.goal) && /apple developer|ios|app store|apps/.test(text)) {
+    score += 16;
+  }
+
   if (resource.freshness.status === "needs_review") score -= 6;
   return Math.max(0, score);
 }
@@ -97,4 +131,41 @@ function explainMatch(profile: FounderProfile, resource: Resource, score: number
 
 function same(a: string, b: string) {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+export function isFormationIntent(profile: Pick<FounderProfile, "goal" | "stage">) {
+  if (profile.stage !== "start" && profile.stage !== "idea" && profile.stage !== "validate") {
+    return false;
+  }
+  return /start(?:up)?|company|business|llc|corporation|incorporat|register|license|ein|fein|bank account|ios|app store|publish|apps?/i.test(
+    profile.goal
+  );
+}
+
+function isFormationResource(resource: Resource) {
+  const text = [resource.title, resource.description, ...resource.topics].join(" ").toLowerCase();
+  return /registration|licensure|legal formation|form a new business|ein|fein|business bank|apple developer|sbdc|score/.test(
+    text
+  );
+}
+
+function mentionsBusinessBanking(goal: string) {
+  return /bank|finance|money|account|startup costs/i.test(goal);
+}
+
+function mentionsAppPublishing(goal: string) {
+  return /ios|app store|apple|publish|apps?/i.test(goal);
+}
+
+function formationResourcePriority(goal: string, resource: Resource) {
+  const priorities = new Map<string, number>([
+    ["basecamp-startup-state-registration", 1],
+    ["basecamp-irs-ein", 2],
+    ["basecamp-sba-business-bank-account", 3],
+    ["basecamp-apple-developer-enrollment", mentionsAppPublishing(goal) ? 4 : 8],
+    ["basecamp-utah-form-new-business", 5],
+    ["basecamp-sbdc-consultation", 6],
+    ["basecamp-score-mentor", 7]
+  ]);
+  return priorities.get(resource.id) ?? 99;
 }

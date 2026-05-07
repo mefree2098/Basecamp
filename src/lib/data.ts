@@ -41,6 +41,61 @@ const STORAGE_DIR = path.resolve(
 let resourceCache: Resource[] | null = null;
 let companyCache: Company[] | null = null;
 
+const UTAH_COUNTIES = [
+  "Beaver",
+  "Box Elder",
+  "Cache",
+  "Carbon",
+  "Daggett",
+  "Davis",
+  "Duchesne",
+  "Emery",
+  "Garfield",
+  "Grand",
+  "Iron",
+  "Juab",
+  "Kane",
+  "Millard",
+  "Morgan",
+  "Piute",
+  "Rich",
+  "Salt Lake",
+  "San Juan",
+  "Sanpete",
+  "Sevier",
+  "Summit",
+  "Tooele",
+  "Uintah",
+  "Utah",
+  "Wasatch",
+  "Washington",
+  "Wayne",
+  "Weber"
+];
+
+const STARTUP_INDUSTRIES = [
+  "Aerospace and Defense",
+  "Agriculture",
+  "Arts and Entertainment and Recreation",
+  "Consumer Packaged Goods",
+  "Financial Services",
+  "Hospitality and Food Services",
+  "Life Sciences and Healthcare",
+  "Manufacturing",
+  "Other",
+  "Software and Information Technology"
+];
+
+const FOUNDER_COMMUNITIES = [
+  "Any",
+  "Multicultural",
+  "New American",
+  "Rural",
+  "Student",
+  "Veteran",
+  "Women"
+];
+
 export function loadResources() {
   if (resourceCache) {
     return resourceCache;
@@ -62,7 +117,7 @@ export function loadResources() {
         locations: splitMulti(row.Locations),
         topics,
         stages: deriveStages(topics, row.description),
-        link: clean(row.link),
+        link: directSeedLink(row),
         email: clean(row.email) || undefined,
         freshness: {
           status: needsReview(row) ? "needs_review" : "seeded",
@@ -73,7 +128,7 @@ export function loadResources() {
       } satisfies Resource;
     });
 
-  resourceCache = mergeResourceOverrides(resources);
+  resourceCache = mergeResourceOverrides([...foundationalStartupResources(), ...resources]);
   return resourceCache;
 }
 
@@ -125,7 +180,7 @@ export function getFacets(resources = loadResources(), companies = loadCompanies
   return {
     stages: facet(resources.flatMap((resource) => resource.stages)),
     topics: facet(resources.flatMap((resource) => resource.topics)),
-    counties: facet(resources.flatMap((resource) => resource.locations)),
+    counties: facet(resources.flatMap((resource) => resource.locations), "alpha"),
     industries: facet(resources.flatMap((resource) => resource.industries)),
     communities: facet(resources.flatMap((resource) => resource.communities)),
     sectors: facet(companies.map((company) => company.sector ?? "Uncategorized")),
@@ -316,6 +371,109 @@ function mergeCompanyOverrides(companies: Company[]) {
   return [...imported, ...companies];
 }
 
+function foundationalStartupResources(): Resource[] {
+  const seeded = {
+    communities: FOUNDER_COMMUNITIES,
+    industries: STARTUP_INDUSTRIES,
+    locations: UTAH_COUNTIES,
+    freshness: {
+      status: "reviewed" as const,
+      note: "Basecamp curated first-stop resource with a direct action link."
+    }
+  };
+
+  return [
+    {
+      ...seeded,
+      id: "basecamp-startup-state-registration",
+      slug: "startup-state-registration-and-licensure",
+      title: "Startup State registration and licensure",
+      description:
+        "Direct Startup State step for choosing a legal formation, getting an FEIN/EIN, registering with Utah, and checking state/local licensing before operating.",
+      topics: ["Start a Business", "Registration", "Licensure", "Legal Formation", "EIN"],
+      stages: ["start"],
+      link: "https://startup.utah.gov/registration/"
+    },
+    {
+      ...seeded,
+      id: "basecamp-utah-form-new-business",
+      slug: "utah-form-a-new-business",
+      title: "Utah form a new business",
+      description:
+        "Direct Utah Division of Corporations path to form a Corporation, LLC, Partnership, Business Trust, DBA, or other business entity.",
+      topics: ["Start a Business", "Registration", "Legal Formation", "LLC", "Corporation"],
+      stages: ["start"],
+      link: "https://commerce.utah.gov/corporations/"
+    },
+    {
+      ...seeded,
+      id: "basecamp-irs-ein",
+      slug: "irs-employer-identification-number",
+      title: "IRS employer identification number",
+      description:
+        "Direct IRS EIN page for getting a federal employer identification number after forming a legal entity with the state.",
+      topics: ["Start a Business", "Taxes and Finance", "EIN", "FEIN", "Registration"],
+      stages: ["start"],
+      link: "https://www.irs.gov/businesses/small-businesses-self-employed/get-an-employer-identification-number"
+    },
+    {
+      ...seeded,
+      id: "basecamp-sba-business-bank-account",
+      slug: "sba-open-business-bank-account",
+      title: "SBA open a business bank account",
+      description:
+        "Direct SBA launch step for opening a business bank account once the founder has a legal business name, entity records, and tax ID.",
+      topics: ["Start a Business", "Taxes and Finance", "Business Operations", "Bank Account"],
+      stages: ["start"],
+      link: "https://www.sba.gov/business-guide/launch-your-business/open-business-bank-account"
+    },
+    {
+      ...seeded,
+      id: "basecamp-sbdc-consultation",
+      slug: "utah-sbdc-free-consultation",
+      title: "Utah SBDC free consultation",
+      description:
+        "Direct Utah SBDC services page for free consultation on business setup, planning, finance, marketing, and startup operations.",
+      topics: ["Start a Business", "Mentoring", "Business Plan", "Taxes and Finance"],
+      stages: ["idea", "validate", "start"],
+      link: "https://utahsbdc.org/services/"
+    },
+    {
+      ...seeded,
+      id: "basecamp-score-mentor",
+      slug: "score-find-a-mentor",
+      title: "SCORE find a mentor",
+      description:
+        "Direct SCORE mentoring path for matching with an experienced volunteer mentor to review a startup idea, launch plan, and first business decisions.",
+      topics: ["Mentoring", "Start a Business", "Business Plan", "Marketing and Sales"],
+      stages: ["idea", "validate", "start"],
+      link: "https://www.score.org/how-mentoring-works/"
+    },
+    {
+      ...seeded,
+      id: "basecamp-apple-developer-enrollment",
+      slug: "apple-developer-program-enrollment",
+      title: "Apple Developer Program enrollment",
+      description:
+        "Direct Apple enrollment page for publishing iOS apps after the founder has decided whether to enroll as an individual or organization.",
+      topics: ["Start a Business", "Product", "Software", "Apps", "Apple Developer"],
+      stages: ["start"],
+      link: "https://developer.apple.com/programs/enroll/"
+    }
+  ];
+}
+
+function directSeedLink(row: ResourceCsvRow) {
+  const title = clean(row.Title).toLowerCase();
+  if (title === "startup state") return "https://startup.utah.gov/registration/";
+  if (title === "small business administration (sba)") {
+    return "https://www.sba.gov/business-guide/launch-your-business";
+  }
+  if (title === "small business development center (sbdc)") return "https://utahsbdc.org/services/";
+  if (title === "score") return "https://www.score.org/how-mentoring-works/";
+  return clean(row.link);
+}
+
 function uniqueCompanySlugs(companies: Company[]) {
   const seen = new Map<string, number>();
   return companies.map((company) => {
@@ -372,7 +530,7 @@ function inferHiringStatus(description: string): Company["hiringStatus"] {
   return /hiring|careers|talent|join our team/i.test(description) ? "hiring" : "unknown";
 }
 
-function facet(values: Array<string | FounderStage | undefined>) {
+function facet(values: Array<string | FounderStage | undefined>, sort: "count" | "alpha" = "count") {
   const counts = new Map<string, number>();
   values
     .map((value) => String(value ?? "").trim())
@@ -380,7 +538,9 @@ function facet(values: Array<string | FounderStage | undefined>) {
     .forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
   return Array.from(counts.entries())
     .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    .sort((a, b) =>
+      sort === "alpha" ? a.label.localeCompare(b.label) : b.count - a.count || a.label.localeCompare(b.label)
+    );
 }
 
 function includesFacet(values: string[], filter: string) {
