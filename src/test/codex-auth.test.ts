@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  extractCodexThreadId,
   isOpenAiCodexAuthUrl,
   normalizeCodexAccount,
   normalizeCodexModelList,
@@ -73,6 +74,17 @@ describe("normalizeCodexModelList", () => {
 
   it("keeps legacy model list responses working", () => {
     expect(normalizeCodexModelList({ models: ["gpt-5.3-codex"] })).toEqual(["gpt-5.3-codex"]);
+  });
+});
+
+describe("extractCodexThreadId", () => {
+  it("reads the current nested Codex thread response shape", () => {
+    expect(extractCodexThreadId({ thread: { id: "thread-current" } })).toBe("thread-current");
+  });
+
+  it("keeps legacy thread response shapes working", () => {
+    expect(extractCodexThreadId({ threadId: "thread-legacy" })).toBe("thread-legacy");
+    expect(extractCodexThreadId({ id: "thread-id" })).toBe("thread-id");
   });
 });
 

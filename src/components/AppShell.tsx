@@ -1,12 +1,10 @@
 import Link from "next/link";
 import {
-  Bot,
   Building2,
   ClipboardCheck,
   Compass,
   Database,
-  Map,
-  Settings2
+  Map
 } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 
@@ -15,8 +13,7 @@ const navItems = [
   { href: "/resources", label: "Resources", icon: Database },
   { href: "/map", label: "Startup Map", icon: Map },
   { href: "/submit-company", label: "Submit", icon: Building2 },
-  { href: "/admin", label: "Admin", icon: ClipboardCheck },
-  { href: "/admin/ai", label: "AI", icon: Bot }
+  { href: "/admin", label: "Admin", icon: ClipboardCheck }
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -35,9 +32,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <Link className="icon-button" href="/admin/ai" aria-label="AI settings">
-          <Settings2 aria-hidden="true" size={19} />
-        </Link>
       </header>
       <main>{children}</main>
     </div>

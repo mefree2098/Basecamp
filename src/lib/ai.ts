@@ -86,10 +86,11 @@ export async function runWizardTurn({
         externalBrowsingUsed: false
       }
     };
-  } catch (error) {
+  } catch {
     return {
       ...localResponse(settings, profile, message, recommendations, planCards),
-      assistantMessage: `The live ${settings.provider} provider was unavailable, so I used the local grounded guide. ${error instanceof Error ? error.message : ""}`.trim(),
+      assistantMessage:
+        "I used the local grounded guide for this path. The live AI provider could not complete the turn, but these matches still come from the Startup State resource data.",
       usedProvider: "mock"
     };
   }

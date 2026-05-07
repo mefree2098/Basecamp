@@ -46,6 +46,21 @@ type CodexModelListResult = {
   data?: Array<string | { id?: string; name?: string; model?: string; hidden?: boolean }>;
 };
 
+type CodexThreadStartResult = {
+  thread?: { id?: string };
+  threadId?: string;
+  id?: string;
+};
+
+type CodexTurnStartResult = {
+  turn?: { id?: string };
+  outputText?: string;
+  finalAnswer?: string;
+  message?: string;
+};
+
+type CodexNotificationHandler = (message: JsonRpcMessage) => void;
+
 type CodexLoginOptions = {
   openBrowser?: boolean;
 };
@@ -106,24 +121,34 @@ export async function runCodexChat(settings: AiSettings, prompt: string) {
   const session = await CodexAppServerSession.create(settings);
   try {
     const thread = (await session.request("thread/start", {
+      model: settings.model,
       approvalPolicy: "never",
       sandbox: "read-only",
       developerInstructions:
-        "You are a chat-only Startup State assistant. Do not ask to run tools. Answer concisely from the supplied context.",
+        "You are Basecamp, a chat-only Startup State assistant. Do not ask to run tools. Answer concisely from the supplied context and cite only supplied resource ids.",
       ephemeral: true
-    })) as { threadId?: string; id?: string };
+    })) as CodexThreadStartResult;
 
-    const threadId = thread.threadId || thread.id;
+    const threadId = extractCodexThreadId(thread);
+    if (!threadId) {
+      throw new Error("Codex did not return a usable thread id.");
+    }
     const turn = (await session.request("turn/start", {
       threadId,
       approvalPolicy: "never",
-      sandboxPolicy: { type: "readOnly" },
+      sandboxPolicy: { type: "readOnly", networkAccess: false },
       effort: settings.thinkingLevel || "medium",
-      input: [{ type: "text", text: prompt }],
+      input: [{ type: "text", text: prompt, text_elements: [] }],
       model: settings.model
-    })) as { outputText?: string; finalAnswer?: string; message?: string };
+    })) as CodexTurnStartResult;
 
-    return turn.outputText || turn.finalAnswer || turn.message || "Codex returned no final text.";
+    const turnId = turn.turn?.id;
+    const immediateText = turn.outputText || turn.finalAnswer || turn.message;
+    if (!turnId) {
+      return immediateText || "Codex returned no final text.";
+    }
+
+    return await session.waitForTurnFinalText(threadId, turnId, immediateText);
   } finally {
     session.close();
   }
@@ -290,6 +315,10 @@ export function normalizeCodexModelList(result: CodexModelListResult) {
     .filter(Boolean);
 }
 
+export function extractCodexThreadId(result: CodexThreadStartResult) {
+  return result.thread?.id || result.threadId || result.id || "";
+}
+
 export function isOpenAiCodexAuthUrl(authUrl: string) {
   try {
     const parsed = new URL(authUrl);
@@ -306,6 +335,7 @@ export function isOpenAiCodexAuthUrl(authUrl: string) {
 
 class CodexAppServerSession {
   private process: ChildProcessWithoutNullStreams;
+  private notificationHandlers = new Set<CodexNotificationHandler>();
   private pending = new Map<
     number | string,
     {
@@ -386,6 +416,62 @@ class CodexAppServerSession {
     this.process.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", method, params })}\n`);
   }
 
+  waitForTurnFinalText(threadId: string, turnId: string, starterText = "") {
+    return new Promise<string>((resolve, reject) => {
+      let text = starterText;
+      let completedText = "";
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("Codex turn timed out before returning a final answer."));
+      }, Number(process.env.CODEX_TURN_TIMEOUT_MS || 60_000));
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        this.notificationHandlers.delete(handle);
+      };
+
+      const finish = () => {
+        cleanup();
+        resolve((completedText || text).trim() || "Codex returned no final text.");
+      };
+
+      const handle: CodexNotificationHandler = (message) => {
+        const params = message.params as
+          | {
+              threadId?: string;
+              turnId?: string;
+              delta?: string;
+              item?: { type?: string; text?: string; phase?: string | null };
+              turn?: { status?: string; error?: { message?: string } | null };
+            }
+          | undefined;
+        if (!params || params.threadId !== threadId) return;
+        if (params.turnId && params.turnId !== turnId) return;
+
+        if (message.method === "item/agentMessage/delta" && typeof params.delta === "string") {
+          text += params.delta;
+          return;
+        }
+
+        if (message.method === "item/completed" && params.item?.type === "agentMessage") {
+          completedText = params.item.text || completedText;
+          return;
+        }
+
+        if (message.method === "turn/completed") {
+          if (params.turn?.status === "failed") {
+            cleanup();
+            reject(new Error(params.turn.error?.message || "Codex turn failed."));
+            return;
+          }
+          finish();
+        }
+      };
+
+      this.notificationHandlers.add(handle);
+    });
+  }
+
   close() {
     this.process.kill("SIGTERM");
     setTimeout(() => {
@@ -424,6 +510,13 @@ class CodexAppServerSession {
 
     if (message.id !== undefined && message.method) {
       this.respondToServerRequest(message);
+      return;
+    }
+
+    if (message.method) {
+      for (const handler of this.notificationHandlers) {
+        handler(message);
+      }
     }
   }
 

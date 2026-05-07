@@ -5,7 +5,7 @@ export function BrandMark() {
   return (
     <Link className="brand-mark" href="/" aria-label="Basecamp home">
       <Image
-        src="/brand/basecamp-iconography.png"
+        src="/brand/basecamp-app-icon.png"
         alt=""
         width={44}
         height={44}

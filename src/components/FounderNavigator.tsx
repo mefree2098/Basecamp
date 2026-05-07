@@ -7,9 +7,11 @@ import {
   Bot,
   CheckCircle2,
   Compass,
+  ListFilter,
+  MapPin,
   MessageSquare,
   Send,
-  Settings2
+  Sparkles
 } from "lucide-react";
 import { AnimatedAvatar } from "./AnimatedAvatar";
 import { recommendResources, makePlanCards } from "@/lib/recommendations";
@@ -60,6 +62,7 @@ export function FounderNavigator({
   const [message, setMessage] = useState(profile.goal);
   const [response, setResponse] = useState<WizardResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [hasRun, setHasRun] = useState(false);
 
   const localRecommendations = useMemo(
     () => recommendResources(profile, resources, compact ? 3 : 5),
@@ -69,11 +72,20 @@ export function FounderNavigator({
     () => makePlanCards(profile, localRecommendations),
     [localRecommendations, profile]
   );
-  const shownRecommendations = response?.recommendations ?? localRecommendations;
+  const shownRecommendations = (response?.recommendations ?? localRecommendations).slice(
+    0,
+    compact ? 3 : 4
+  );
   const shownPlan = response?.planCards ?? localPlan;
+  const hasResults = hasRun || Boolean(response);
+  const assistantText =
+    response?.assistantMessage ??
+    "A short answer will appear here with a recommended first stop and a few grounded matches from the Startup State data.";
+  const assistantParagraphs = formatAssistantText(assistantText);
 
   async function runNavigator() {
     setLoading(true);
+    setHasRun(true);
     try {
       const stored =
         typeof window === "undefined" ? null : window.localStorage.getItem("basecamp.aiSettings");
@@ -83,7 +95,23 @@ export function FounderNavigator({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ settings, profile, message })
       });
+      if (!result.ok) {
+        throw new Error("Basecamp could not build a path right now.");
+      }
       setResponse((await result.json()) as WizardResponse);
+    } catch {
+      setResponse({
+        assistantMessage:
+          "I could not reach the live guide, so I kept this local and matched your goal against the Startup State resource data.",
+        recommendations: localRecommendations,
+        planCards: localPlan,
+        usedProvider: "mock",
+        guardrails: {
+          deterministicFilters: true,
+          citationsRequired: true,
+          externalBrowsingUsed: false
+        }
+      });
     } finally {
       setLoading(false);
     }
@@ -97,10 +125,10 @@ export function FounderNavigator({
             <Compass size={15} aria-hidden="true" />
             Founder navigator
           </span>
-          <h1>{compact ? "Get a path in under two minutes" : "Basecamp Command Center"}</h1>
+          <h1>{compact ? "Get a path in under two minutes" : "What are you trying to do?"}</h1>
           <p>
-            A guided intake, grounded recommendations, and a persistent workbench for founders who
-            do not have time to decode a resource library.
+            Tell Basecamp the next thing on your plate. It will return a first stop, why it fits,
+            and what to do today.
           </p>
         </div>
 
@@ -118,61 +146,104 @@ export function FounderNavigator({
             className={profile.mode === "manual" ? "active" : ""}
             onClick={() => setProfile({ ...profile, mode: "manual" })}
           >
-            <Settings2 size={16} aria-hidden="true" />
+            <ListFilter size={16} aria-hidden="true" />
             Manual
           </button>
         </div>
 
-        <div className="intake-grid">
-          <label className="select-field">
-            <span>Stage</span>
-            <select
-              value={profile.stage}
-              onChange={(event) =>
-                setProfile({ ...profile, stage: event.target.value as FounderStage })
-              }
-            >
-              {stageOptions.map((stage) => (
-                <option key={stage.value} value={stage.value}>
-                  {stage.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="select-field">
-            <span>Industry</span>
-            <select
-              value={profile.industry}
-              onChange={(event) => setProfile({ ...profile, industry: event.target.value })}
-            >
-              {industries.slice(0, 30).map((industry) => (
-                <option key={industry}>{industry}</option>
-              ))}
-            </select>
-          </label>
-          <label className="select-field">
-            <span>County</span>
-            <select
-              value={profile.county}
-              onChange={(event) => setProfile({ ...profile, county: event.target.value })}
-            >
-              {counties.slice(0, 35).map((county) => (
-                <option key={county}>{county}</option>
-              ))}
-            </select>
-          </label>
-          <label className="select-field">
-            <span>Community</span>
-            <select
-              value={profile.community}
-              onChange={(event) => setProfile({ ...profile, community: event.target.value })}
-            >
-              {communities.slice(0, 25).map((community) => (
-                <option key={community}>{community}</option>
-              ))}
-            </select>
-          </label>
-        </div>
+        {profile.mode === "guided" ? (
+          <div className="guided-card">
+            <div className="guided-card__copy">
+              <span>
+                <Sparkles size={16} aria-hidden="true" />
+                Quick path
+              </span>
+              <p>Keep it simple: stage, county, and one plain-language goal.</p>
+            </div>
+            <div className="intake-grid intake-grid--guided">
+              <label className="select-field">
+                <span>Stage</span>
+                <select
+                  value={profile.stage}
+                  onChange={(event) =>
+                    setProfile({ ...profile, stage: event.target.value as FounderStage })
+                  }
+                >
+                  {stageOptions.map((stage) => (
+                    <option key={stage.value} value={stage.value}>
+                      {stage.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="select-field">
+                <span>
+                  <MapPin size={15} aria-hidden="true" />
+                  County
+                </span>
+                <select
+                  value={profile.county}
+                  onChange={(event) => setProfile({ ...profile, county: event.target.value })}
+                >
+                  {counties.slice(0, 35).map((county) => (
+                    <option key={county}>{county}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+        ) : (
+          <div className="intake-grid">
+            <label className="select-field">
+              <span>Stage</span>
+              <select
+                value={profile.stage}
+                onChange={(event) =>
+                  setProfile({ ...profile, stage: event.target.value as FounderStage })
+                }
+              >
+                {stageOptions.map((stage) => (
+                  <option key={stage.value} value={stage.value}>
+                    {stage.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="select-field">
+              <span>Industry</span>
+              <select
+                value={profile.industry}
+                onChange={(event) => setProfile({ ...profile, industry: event.target.value })}
+              >
+                {industries.slice(0, 30).map((industry) => (
+                  <option key={industry}>{industry}</option>
+                ))}
+              </select>
+            </label>
+            <label className="select-field">
+              <span>County</span>
+              <select
+                value={profile.county}
+                onChange={(event) => setProfile({ ...profile, county: event.target.value })}
+              >
+                {counties.slice(0, 35).map((county) => (
+                  <option key={county}>{county}</option>
+                ))}
+              </select>
+            </label>
+            <label className="select-field">
+              <span>Community</span>
+              <select
+                value={profile.community}
+                onChange={(event) => setProfile({ ...profile, community: event.target.value })}
+              >
+                {communities.slice(0, 25).map((community) => (
+                  <option key={community}>{community}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
 
         <label className="message-box">
           <span>
@@ -185,44 +256,47 @@ export function FounderNavigator({
         <div className="navigator-actions">
           <button className="primary-button" type="button" onClick={runNavigator} disabled={loading}>
             <Send size={16} aria-hidden="true" />
-            {loading ? "Building path..." : "Build my path"}
+            {loading ? "Finding the first stop..." : "Find my first stop"}
           </button>
-          <Link className="ghost-button" href="/admin/ai">
-            <Settings2 size={16} aria-hidden="true" />
-            AI settings
-          </Link>
         </div>
       </div>
 
-      <aside className="navigator__results">
+      <aside className={hasResults ? "navigator__results" : "navigator__results navigator__results--empty"}>
         <AnimatedAvatar />
         <div className="assistant-answer">
           <span className="eyebrow">
             <Bot size={15} aria-hidden="true" />
-            {response?.usedProvider ?? "local guide"}
+            {formatProviderLabel(response?.usedProvider)}
           </span>
-          <p>
-            {response?.assistantMessage ??
-              "Set your stage, location, and goal. Basecamp prefilters the corpus before any model sees it, then returns cited resources only."}
-          </p>
+          <div className="assistant-answer__copy">
+            {assistantParagraphs.map((paragraph, index) => (
+              <p key={`${index}-${paragraph}`}>{paragraph}</p>
+            ))}
+          </div>
         </div>
 
-        <div className="recommendation-list">
-          {shownRecommendations.map((item) => (
-            <article className="recommendation-card" key={item.resource.slug}>
-              <div>
-                <span>{Math.round(item.score)} match</span>
-                <h3>{item.resource.title}</h3>
-                <p>{item.why}</p>
-              </div>
-              <Link href={item.resource.link} target="_blank" aria-label={`Open ${item.resource.title}`}>
-                <ArrowRight size={18} aria-hidden="true" />
-              </Link>
-            </article>
-          ))}
-        </div>
+        {hasResults && (
+          <div className="recommendation-list">
+            {shownRecommendations.map((item) => (
+              <article className="recommendation-card" key={item.resource.slug}>
+                <div>
+                  <span>{Math.round(item.score)} match</span>
+                  <h3>{item.resource.title}</h3>
+                  <p>{item.why}</p>
+                </div>
+                <Link
+                  href={item.resource.link}
+                  target="_blank"
+                  aria-label={`Open ${item.resource.title}`}
+                >
+                  <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
 
-        {!compact && (
+        {!compact && hasResults && (
           <div className="plan-list">
             {shownPlan.map((card) => (
               <div className="plan-item" key={card.title}>
@@ -236,4 +310,20 @@ export function FounderNavigator({
       </aside>
     </section>
   );
+}
+
+function formatProviderLabel(provider?: string) {
+  if (provider === "codexPath") return "Codex guide";
+  if (provider === "openai") return "OpenAI guide";
+  if (provider === "anthropic") return "Anthropic guide";
+  if (provider === "gemini") return "Gemini guide";
+  return "Local guide";
+}
+
+function formatAssistantText(text: string) {
+  const cleaned = text.replace(/\*\*/g, "").replace(/\[(resource:\d+)\]/g, "[$1]");
+  return cleaned
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
 }
