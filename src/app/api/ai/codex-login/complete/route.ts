@@ -4,7 +4,7 @@ import { completeCodexLogin } from "@/lib/codex/appServer";
 
 const schema = z.object({
   loginId: z.string().optional(),
-  callbackUrl: z.string().url(),
+  callbackUrl: z.string().trim().url(),
   codexPath: z.string().optional(),
   codexHome: z.string().optional()
 });

@@ -29,6 +29,7 @@ Use a single containerized Next.js application instead of the initial EKS-style 
 - Ported a server-side Codex app-server integration scaffold with bundled `@openai/codex`, writable home resolution, file credential store enforcement, model listing, auth health, and hosted login endpoints.
 - Added local tests for recommendation ranking and model catalog.
 - Fixed visual QA issues found after launch: company map loader now handles trimmed CSV headers, duplicate company slugs are uniqued, compact grid sections no longer stretch headings, and company draft submission returns clean validation errors.
+- Fixed Codex hosted login completion for current `@openai/codex`: callback completion now relays the pasted localhost callback URL into the pending Codex listener instead of calling the unsupported `account/login/complete` RPC, with localhost-only validation around the sensitive callback token.
 - Verified the app with lint, typecheck, unit tests, production build, npm audit, Playwright smoke test, and manual Playwright UI passes across desktop/mobile.
 - Initialized git, created private GitHub repo `mefree2098/Basecamp`, pushed `main`, and confirmed GitHub CI passed.
 - Kept the Azure Container App workflow manual-only until Azure secrets are configured, so normal pushes run CI without a failing deploy job.

@@ -159,22 +159,80 @@ export async function completeCodexLogin({
   if (!pending) {
     throw new Error("Pending Codex login session was not found or has expired.");
   }
-  try {
-    const result = await pending.session.request("account/login/complete", {
-      callbackUrl
-    });
+
+  const localCallbackUrl = validateCodexCallbackUrl(callbackUrl);
+  const finish = (mode: string, extra?: Record<string, unknown>) => {
     pendingCodexLogins.delete(loginId);
     pending.session.close();
     return {
-      mode: "relay",
-      result
+      mode,
+      authenticated: true,
+      message: "Codex login completed.",
+      effectiveCodexPath: pending.session.codexPath,
+      effectiveCodexHome: pending.session.codexHome,
+      ...extra
     };
-  } catch (error) {
+  };
+
+  let relayStatus: number | undefined;
+  let relayFailed = false;
+  try {
+    relayStatus = await forwardCodexLoginCallback(localCallbackUrl);
+  } catch {
+    relayFailed = true;
+  }
+
+  const account = await waitForCodexAuth(pending.session);
+  if (account.authenticated) {
+    return finish(relayFailed ? "relay-timeout-authenticated" : "relay", {
+      relayStatus,
+      accountEmail: account.accountEmail || account.email,
+      planType: account.planType
+    });
+  }
+
+  if (relayFailed) {
     return {
       mode: "relay-timeout-pending",
-      message: error instanceof Error ? error.message : "Codex login completion failed."
+      authenticated: false,
+      message:
+        "The callback could not be forwarded to the pending local Codex listener. Click Sign in again, then paste the fresh localhost callback URL while the pending login is still active."
     };
   }
+
+  return {
+    mode: "relay-timeout-pending",
+    authenticated: false,
+    relayStatus,
+    message:
+      "The callback was forwarded to Codex, but auth has not appeared yet. Try Check auth; if it still needs login, start a fresh sign-in."
+  };
+}
+
+export function validateCodexCallbackUrl(callbackUrl: string) {
+  let parsed: URL;
+  try {
+    parsed = new URL(callbackUrl.trim());
+  } catch {
+    throw new Error("Paste the full localhost callback URL from the Codex login tab.");
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const isLocalhost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "[::1]";
+
+  if (parsed.protocol !== "http:" || !isLocalhost) {
+    throw new Error("For safety, Codex login completion only accepts http://localhost callback URLs.");
+  }
+
+  if (!parsed.searchParams.has("code") && !parsed.searchParams.has("id_token")) {
+    throw new Error("The Codex login callback URL is missing its login token.");
+  }
+
+  return parsed;
 }
 
 class CodexAppServerSession {
@@ -335,6 +393,42 @@ function pruneExpiredLogins() {
       pendingCodexLogins.delete(id);
     }
   }
+}
+
+async function forwardCodexLoginCallback(callbackUrl: URL) {
+  const response = await fetch(callbackUrl, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(Number(process.env.CODEX_LOGIN_RELAY_TIMEOUT_MS || 10_000))
+  });
+  return response.status;
+}
+
+async function waitForCodexAuth(session: CodexAppServerSession) {
+  const deadline = Date.now() + Number(process.env.CODEX_LOGIN_AUTH_WAIT_MS || 12_000);
+  let lastAccount: {
+    authenticated?: boolean;
+    email?: string;
+    accountEmail?: string;
+    planType?: string;
+  } = {};
+
+  while (Date.now() < deadline) {
+    try {
+      lastAccount = (await session.request("account/read", {
+        refreshToken: true
+      })) as typeof lastAccount;
+      if (lastAccount.authenticated) return lastAccount;
+    } catch {
+      // The listener may still be writing auth state; keep the pending login alive.
+    }
+    await sleep(300);
+  }
+
+  return lastAccount;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function resolveCodexCommand(codexPath: string) {
