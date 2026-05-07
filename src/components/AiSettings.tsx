@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { Bot, CheckCircle2, KeyRound, RefreshCw, Shield, Zap } from "lucide-react";
 import type { AiProvider, AiSettings as AiSettingsType, ModelOption, ThinkingLevel } from "@/lib/types";
 import { modelFallbacks } from "@/lib/site-context";
@@ -30,15 +30,18 @@ const defaultSettings: AiSettingsType = {
 };
 
 export function AiSettings() {
-  const [settings, setSettings] = useState<AiSettingsType>(() => {
-    if (typeof window === "undefined") return defaultSettings;
-    const stored = window.localStorage.getItem("basecamp.aiSettings");
-    return stored ? { ...defaultSettings, ...(JSON.parse(stored) as AiSettingsType) } : defaultSettings;
-  });
+  const storedSettings = useSyncExternalStore(
+    subscribeToStoredSettings,
+    readStoredSettings,
+    () => null
+  );
+  const settings = useMemo(() => parseStoredSettings(storedSettings), [storedSettings]);
   const [models, setModels] = useState<ModelOption[]>(modelFallbacks);
   const [status, setStatus] = useState("Settings are saved in this browser and sent live per request.");
   const [callbackUrl, setCallbackUrl] = useState("");
   const [pendingLoginId, setPendingLoginId] = useState("");
+  const [loginUrl, setLoginUrl] = useState("");
+  const [isLoginPending, setIsLoginPending] = useState(false);
 
   const providerModels = useMemo(
     () => models.filter((model) => model.provider === settings.provider || model.provider === "mock"),
@@ -51,44 +54,62 @@ export function AiSettings() {
       const fallback = modelFallbacks.find((model) => model.provider === patch.provider);
       next.model = fallback?.id ?? "basecamp-local-guide";
     }
-    setSettings(next);
+    saveSettings(next);
+  }
+
+  function saveSettings(next: AiSettingsType) {
     window.localStorage.setItem("basecamp.aiSettings", JSON.stringify(redactForStorage(next)));
+    window.dispatchEvent(new Event(STORED_SETTINGS_EVENT));
+  }
+
+  function applyModelCatalog(nextModels: ModelOption[], settingsSnapshot: AiSettingsType) {
+    const providerOptions = nextModels.filter((model) => model.provider === settingsSnapshot.provider);
+    const hasSelectedModel = providerOptions.some((model) => model.id === settingsSnapshot.model);
+    setModels(nextModels);
+    if (!hasSelectedModel && providerOptions[0]) {
+      const nextSettings = { ...settingsSnapshot, model: providerOptions[0].id };
+      saveSettings(nextSettings);
+      return nextSettings;
+    }
+    return settingsSnapshot;
+  }
+
+  async function loadModelCatalog(settingsSnapshot: AiSettingsType) {
+    const response = await fetch("/api/ai/models", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(redactForTransport(settingsSnapshot))
+    });
+    const result = (await response.json()) as { models: ModelOption[]; error?: string };
+    const nextModels = result.models?.length ? result.models : modelFallbacks;
+    const nextSettings = applyModelCatalog(nextModels, settingsSnapshot);
+    return { result, nextModels, nextSettings };
   }
 
   async function refreshModels() {
     setStatus("Refreshing model list...");
-    const response = await fetch("/api/ai/models", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(redactForTransport(settings))
-    });
-    const result = (await response.json()) as { models: ModelOption[]; error?: string };
-    const nextModels = result.models?.length ? result.models : modelFallbacks;
-    const providerOptions = nextModels.filter((model) => model.provider === settings.provider);
-    const hasSelectedModel = providerOptions.some((model) => model.id === settings.model);
-    setModels(nextModels);
-    if (!hasSelectedModel && providerOptions[0]) {
-      const nextSettings = { ...settings, model: providerOptions[0].id };
-      setSettings(nextSettings);
-      window.localStorage.setItem("basecamp.aiSettings", JSON.stringify(redactForStorage(nextSettings)));
-    }
+    const { result, nextModels } = await loadModelCatalog(settings);
     setStatus(result.error ?? `Loaded ${nextModels.length} model options.`);
   }
 
-  async function checkCodexHealth() {
-    setStatus("Checking Codex auth...");
+  async function readCodexHealth(settingsSnapshot: AiSettingsType) {
     const params = new URLSearchParams({
-      codexPath: settings.codexPath ?? "",
-      codexHome: settings.codexHome ?? ""
+      codexPath: settingsSnapshot.codexPath ?? "",
+      codexHome: settingsSnapshot.codexHome ?? ""
     });
     const response = await fetch(`/api/ai/codex-auth-health?${params.toString()}`);
-    const result = (await response.json()) as {
+    return (await response.json()) as {
       authenticated?: boolean;
       loginRequired?: boolean;
       effectiveCodexHome?: string;
       modelCount?: number;
       error?: string;
     };
+  }
+
+  async function checkCodexHealth() {
+    setStatus("Checking Codex auth...");
+    const result = await readCodexHealth(settings);
     setStatus(
       result.error ??
         `Codex ${result.authenticated ? "authenticated" : "needs login"} at ${result.effectiveCodexHome}. ${result.modelCount ?? 0} models visible.`
@@ -96,21 +117,76 @@ export function AiSettings() {
   }
 
   async function startCodexLogin() {
+    const loginSettings: AiSettingsType = {
+      ...settings,
+      provider: "codexPath",
+      model: settings.provider === "codexPath" ? settings.model : "gpt-5.5"
+    };
+    saveSettings(loginSettings);
     setStatus("Starting Codex login...");
+    setLoginUrl("");
+    setIsLoginPending(true);
     const params = new URLSearchParams({
       startLogin: "1",
-      codexPath: settings.codexPath ?? "",
-      codexHome: settings.codexHome ?? ""
+      openBrowser: "1",
+      codexPath: loginSettings.codexPath ?? "",
+      codexHome: loginSettings.codexHome ?? ""
     });
-    const response = await fetch(`/api/ai/codex-models?${params.toString()}`);
-    const result = (await response.json()) as {
-      authUrl?: string;
-      pendingLoginId?: string;
-      error?: string;
-    };
-    if (result.pendingLoginId) setPendingLoginId(result.pendingLoginId);
-    if (result.authUrl) window.open(result.authUrl, "_blank", "noopener,noreferrer");
-    setStatus(result.error ?? "Login opened. Paste the localhost callback URL here if the tab cannot complete.");
+    try {
+      const response = await fetch(`/api/ai/codex-models?${params.toString()}`);
+      const result = (await response.json()) as {
+        authenticated?: boolean;
+        authUrl?: string;
+        pendingLoginId?: string;
+        browserOpened?: boolean;
+        browserOpenMessage?: string;
+        error?: string;
+      };
+      if (result.error) {
+        setStatus(result.error);
+        setIsLoginPending(false);
+        return;
+      }
+      if (result.pendingLoginId) setPendingLoginId(result.pendingLoginId);
+      if (result.authenticated) {
+        const { nextModels } = await loadModelCatalog(loginSettings);
+        setStatus(`Codex already authenticated. Loaded ${nextModels.length} model options.`);
+        setIsLoginPending(false);
+        return;
+      }
+      if (result.authUrl && !result.browserOpened) setLoginUrl(result.authUrl);
+      setStatus(
+        result.browserOpened
+          ? "Codex login window opened. Complete sign-in there; Basecamp will detect it automatically."
+          : (result.browserOpenMessage ?? "Use Open login window, then complete sign-in there. Basecamp will detect it automatically.")
+      );
+      await pollCodexLogin(loginSettings);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to start Codex login.");
+      setIsLoginPending(false);
+    }
+  }
+
+  async function pollCodexLogin(settingsSnapshot: AiSettingsType) {
+    const deadline = Date.now() + 120_000;
+    while (Date.now() < deadline) {
+      await sleep(2_000);
+      const health = await readCodexHealth(settingsSnapshot);
+      if (health.authenticated) {
+        const { nextModels } = await loadModelCatalog(settingsSnapshot);
+        setPendingLoginId("");
+        setCallbackUrl("");
+        setLoginUrl("");
+        setIsLoginPending(false);
+        setStatus(
+          `Codex authenticated at ${health.effectiveCodexHome}. ${nextModels.length || health.modelCount || 0} models visible.`
+        );
+        return;
+      }
+      setStatus("Waiting for Codex login to finish in the browser window...");
+    }
+    setIsLoginPending(false);
+    setStatus("Login window opened, but Basecamp has not detected completion yet. Click Check auth to retry detection.");
   }
 
   async function completeCodexLogin() {
@@ -280,25 +356,34 @@ export function AiSettings() {
             </button>
             <button className="primary-button" type="button" onClick={startCodexLogin}>
               <Zap size={16} aria-hidden="true" />
-              Sign in
+              {isLoginPending ? "Waiting..." : "Sign in"}
             </button>
           </div>
-          <label className="message-box">
-            <span>Complete login callback</span>
-            <textarea
-              value={callbackUrl}
-              onChange={(event) => setCallbackUrl(event.target.value)}
-              placeholder="http://localhost:1455/auth/callback?code=..."
-            />
-          </label>
-          <button
-            className="ghost-button"
-            type="button"
-            onClick={completeCodexLogin}
-            disabled={!callbackUrl.trim() || !pendingLoginId}
-          >
-            Complete login
-          </button>
+          {loginUrl && (
+            <a className="ghost-button" href={loginUrl} target="_blank" rel="noreferrer">
+              Open login window
+            </a>
+          )}
+          {pendingLoginId && (
+            <>
+              <label className="message-box">
+                <span>Manual callback fallback</span>
+                <textarea
+                  value={callbackUrl}
+                  onChange={(event) => setCallbackUrl(event.target.value)}
+                  placeholder="http://localhost:1455/auth/callback?code=..."
+                />
+              </label>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={completeCodexLogin}
+                disabled={!callbackUrl.trim()}
+              >
+                Complete login
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -316,4 +401,32 @@ function redactForStorage(settings: AiSettingsType) {
 
 function redactForTransport(settings: AiSettingsType) {
   return settings;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const STORED_SETTINGS_EVENT = "basecamp-ai-settings";
+
+function subscribeToStoredSettings(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(STORED_SETTINGS_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(STORED_SETTINGS_EVENT, onStoreChange);
+  };
+}
+
+function readStoredSettings() {
+  return window.localStorage.getItem("basecamp.aiSettings");
+}
+
+function parseStoredSettings(storedSettings: string | null): AiSettingsType {
+  if (!storedSettings) return defaultSettings;
+  try {
+    return { ...defaultSettings, ...(JSON.parse(storedSettings) as AiSettingsType) };
+  } catch {
+    return defaultSettings;
+  }
 }

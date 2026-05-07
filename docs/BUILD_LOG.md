@@ -30,6 +30,7 @@ Use a single containerized Next.js application instead of the initial EKS-style 
 - Added local tests for recommendation ranking and model catalog.
 - Fixed visual QA issues found after launch: company map loader now handles trimmed CSV headers, duplicate company slugs are uniqued, compact grid sections no longer stretch headings, and company draft submission returns clean validation errors.
 - Fixed Codex hosted login completion for current `@openai/codex`: callback completion now relays the pasted localhost callback URL into the pending Codex listener instead of calling the unsupported `account/login/complete` RPC, handles the current nested `account/read` and `model/list` response shapes, and keeps localhost-only validation around the sensitive callback token.
+- Changed Codex sign-in UX to match the CLI-style local flow: local Basecamp can ask the backend to open the generated OpenAI auth URL in the system browser, keep the Codex listener alive, poll auth/model status automatically, and reserve callback paste as a hidden fallback only when a pending login exists.
 - Verified the app with lint, typecheck, unit tests, production build, npm audit, Playwright smoke test, and manual Playwright UI passes across desktop/mobile.
 - Initialized git, created private GitHub repo `mefree2098/Basecamp`, pushed `main`, and confirmed GitHub CI passed.
 - Kept the Azure Container App workflow manual-only until Azure secrets are configured, so normal pushes run CI without a failing deploy job.
@@ -41,6 +42,7 @@ Use a single containerized Next.js application instead of the initial EKS-style 
 - Browser QA fallback: Playwright loaded `/`, `/map`, `/admin/ai`, and `/submit-company`; screenshots were written to `test-results/`; no console errors remained.
 - `GET /api/ai/codex-auth-health`: returns a clean unauthenticated/login-required health response with the effective writable Codex home.
 - After local Codex login, `GET /api/ai/codex-auth-health` reports authenticated ChatGPT auth with 5 visible Codex models, and the admin UI refreshes the model dropdown to current Codex models such as `gpt-5.5`.
+- `GET /api/ai/codex-models?startLogin=1&openBrowser=1` detects existing Codex auth without requiring manual callback paste; clicking Sign in in the admin UI switches to Codex mode and reports the authenticated model catalog.
 
 ## Next Steps
 

@@ -17,7 +17,9 @@ export async function GET(request: Request) {
         source: "codex",
         includeHidden: false,
         models: [],
-        ...(await startCodexLogin(settings))
+        ...(await startCodexLogin(settings, {
+          openBrowser: url.searchParams.get("openBrowser") === "1"
+        }))
       });
     }
     const models = await listCodexModels(settings);

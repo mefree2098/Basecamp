@@ -46,6 +46,10 @@ type CodexModelListResult = {
   data?: Array<string | { id?: string; name?: string; model?: string; hidden?: boolean }>;
 };
 
+type CodexLoginOptions = {
+  openBrowser?: boolean;
+};
+
 let nextId = 1;
 const pendingCodexLogins = new Map<
   string,
@@ -125,7 +129,7 @@ export async function runCodexChat(settings: AiSettings, prompt: string) {
   }
 }
 
-export async function startCodexLogin(settings?: Partial<AiSettings>) {
+export async function startCodexLogin(settings?: Partial<AiSettings>, options?: CodexLoginOptions) {
   const session = await CodexAppServerSession.create(settings);
   try {
     const account = normalizeCodexAccount((await session.request("account/read", {
@@ -146,6 +150,8 @@ export async function startCodexLogin(settings?: Partial<AiSettings>) {
     const login = (await session.request("account/login/start", {
       type: "chatgpt"
     })) as { authUrl?: string; url?: string };
+    const authUrl = login.authUrl || login.url;
+    const browserOpen = options?.openBrowser && authUrl ? openCodexLoginInBrowser(authUrl) : null;
     const pendingLoginId = randomUUID();
     pendingCodexLogins.set(pendingLoginId, {
       session,
@@ -156,10 +162,13 @@ export async function startCodexLogin(settings?: Partial<AiSettings>) {
     return {
       loginRequired: true,
       authenticated: false,
-      authUrl: login.authUrl || login.url,
+      authUrl,
       pendingLoginId,
+      browserOpenAttempted: Boolean(browserOpen),
+      browserOpened: Boolean(browserOpen?.opened),
+      browserOpenMessage: browserOpen?.message,
       callbackHint:
-        "If login lands on localhost and fails, paste the full callback URL into Complete login.",
+        "Complete the login in the opened browser window. Basecamp will detect the Codex auth state automatically.",
       effectiveCodexPath: session.codexPath,
       effectiveCodexHome: session.codexHome
     };
@@ -279,6 +288,20 @@ export function normalizeCodexModelList(result: CodexModelListResult) {
     .filter((model) => typeof model === "string" || !model.hidden)
     .map((model) => (typeof model === "string" ? model : model.id || model.model || model.name || ""))
     .filter(Boolean);
+}
+
+export function isOpenAiCodexAuthUrl(authUrl: string) {
+  try {
+    const parsed = new URL(authUrl);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname === "auth.openai.com" &&
+      parsed.pathname === "/oauth/authorize" &&
+      parsed.searchParams.get("client_id") === "app_EMoamEEZ73f0CkXaXp7hrann"
+    );
+  } catch {
+    return false;
+  }
 }
 
 class CodexAppServerSession {
@@ -473,6 +496,55 @@ async function waitForCodexAuth(session: CodexAppServerSession) {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function openCodexLoginInBrowser(authUrl: string) {
+  if (!isOpenAiCodexAuthUrl(authUrl)) {
+    return {
+      opened: false,
+      message: "Codex returned an unexpected login URL, so Basecamp did not open it automatically."
+    };
+  }
+
+  if (isHostedRuntime()) {
+    return {
+      opened: false,
+      message: "Automatic browser launch is only available when Basecamp is running locally."
+    };
+  }
+
+  try {
+    const opener =
+      process.platform === "darwin"
+        ? { command: "open", args: [authUrl] }
+        : process.platform === "win32"
+          ? { command: "cmd", args: ["/c", "start", "", authUrl] }
+          : { command: "xdg-open", args: [authUrl] };
+    const child = spawn(opener.command, opener.args, {
+      detached: true,
+      stdio: "ignore"
+    });
+    child.unref();
+    return {
+      opened: true,
+      message: "Opened the Codex login in your system browser."
+    };
+  } catch (error) {
+    return {
+      opened: false,
+      message: error instanceof Error ? error.message : "Unable to open the system browser."
+    };
+  }
+}
+
+function isHostedRuntime() {
+  return Boolean(
+    process.env.WEBSITE_SITE_NAME ||
+      process.env.WEBSITE_INSTANCE_ID ||
+      process.env.K_SERVICE ||
+      process.env.AWS_EXECUTION_ENV ||
+      process.env.CODESPACES
+  );
 }
 
 function resolveCodexCommand(codexPath: string) {

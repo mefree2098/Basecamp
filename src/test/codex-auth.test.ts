@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isOpenAiCodexAuthUrl,
   normalizeCodexAccount,
   normalizeCodexModelList,
   validateCodexCallbackUrl
@@ -72,5 +73,23 @@ describe("normalizeCodexModelList", () => {
 
   it("keeps legacy model list responses working", () => {
     expect(normalizeCodexModelList({ models: ["gpt-5.3-codex"] })).toEqual(["gpt-5.3-codex"]);
+  });
+});
+
+describe("isOpenAiCodexAuthUrl", () => {
+  it("accepts Codex OAuth URLs from the official OpenAI auth host", () => {
+    expect(
+      isOpenAiCodexAuthUrl(
+        "https://auth.openai.com/oauth/authorize?client_id=app_EMoamEEZ73f0CkXaXp7hrann&state=test"
+      )
+    ).toBe(true);
+  });
+
+  it("rejects unexpected login hosts", () => {
+    expect(
+      isOpenAiCodexAuthUrl(
+        "https://example.com/oauth/authorize?client_id=app_EMoamEEZ73f0CkXaXp7hrann&state=test"
+      )
+    ).toBe(false);
   });
 });
