@@ -3,7 +3,7 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "csv-parse/sync";
-import { coordinatesForAddress } from "./geo";
+import { coordinatesForAddress, locationForAddress } from "./geo";
 import type { Company, FounderStage, Resource } from "./types";
 
 type ResourceCsvRow = {
@@ -152,6 +152,7 @@ export function loadCompanies() {
         displayType: clean(row["Display Type"]) || "profile",
         linkedin: clean(row["LinkedIn Link (map it to Links to get the logo)"]) || undefined,
         address,
+        location: locationForAddress(address) || "Utah",
         description:
           description || `${name} is part of Utah's startup ecosystem and can enrich this profile through the self-service claim flow.`,
         website,
@@ -161,6 +162,8 @@ export function loadCompanies() {
         hiringStatus: inferHiringStatus(description),
         foundedYear: undefined,
         jobsUrl: website ? `${website.replace(/\/$/, "")}/careers` : undefined,
+        atsUrl: undefined,
+        jobPostings: [],
         gallery: [],
         coordinates: coordinatesForAddress(address, name),
         verificationStatus: "seeded"
@@ -171,9 +174,13 @@ export function loadCompanies() {
   return companyCache;
 }
 
-export function resetDataCachesForTests() {
+export function clearDataCaches() {
   resourceCache = null;
   companyCache = null;
+}
+
+export function resetDataCachesForTests() {
+  clearDataCaches();
 }
 
 export function getFacets(resources = loadResources(), companies = loadCompanies()) {
@@ -185,7 +192,8 @@ export function getFacets(resources = loadResources(), companies = loadCompanies
     communities: facet(resources.flatMap((resource) => resource.communities)),
     sectors: facet(companies.map((company) => company.sector ?? "Uncategorized")),
     companyStages: facet(companies.map((company) => company.stage ?? "Unknown")),
-    employeeBands: facet(companies.map((company) => company.employees ?? "Unknown"))
+    employeeBands: facet(companies.map((company) => company.employees ?? "Unknown")),
+    companyLocations: facet(companies.map((company) => company.location || "Utah"), "alpha")
   };
 }
 
@@ -232,6 +240,7 @@ export function filterCompanies(
     stage?: string;
     employees?: string;
     hiring?: string;
+    location?: string;
   }
 ) {
   const q = filters.q?.trim().toLowerCase();
@@ -241,6 +250,7 @@ export function filterCompanies(
       company.description,
       company.sector,
       company.stage,
+      company.location,
       company.address
     ]
       .join(" ")
@@ -250,6 +260,7 @@ export function filterCompanies(
       (!filters.sector || company.sector === filters.sector) &&
       (!filters.stage || company.stage === filters.stage) &&
       (!filters.employees || company.employees === filters.employees) &&
+      (!filters.location || company.location === filters.location) &&
       (!filters.hiring || filters.hiring === "any" || company.hiringStatus === filters.hiring)
     );
   });
@@ -355,6 +366,7 @@ function mergeCompanyOverrides(companies: Company[]) {
         displayType: row.displayType ?? "profile",
         linkedin: row.linkedin,
         address,
+        location: row.location ?? locationForAddress(address) ?? "Utah",
         description: row.description ?? "",
         website: row.website,
         stage: row.stage,
@@ -363,6 +375,8 @@ function mergeCompanyOverrides(companies: Company[]) {
         hiringStatus: row.hiringStatus ?? "unknown",
         foundedYear: row.foundedYear,
         jobsUrl: row.jobsUrl,
+        atsUrl: row.atsUrl,
+        jobPostings: row.jobPostings ?? [],
         gallery: row.gallery ?? [],
         coordinates: row.coordinates ?? coordinatesForAddress(address, name),
         verificationStatus: "pending"

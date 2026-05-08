@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
-import { Bot, CheckCircle2, KeyRound, RefreshCw, Shield, Zap } from "lucide-react";
+import { Bot, CheckCircle2, KeyRound, MapPinned, RefreshCw, Shield, Zap } from "lucide-react";
 import type { AiProvider, AiSettings as AiSettingsType, ModelOption, ThinkingLevel } from "@/lib/types";
 import { modelFallbacks } from "@/lib/site-context";
 
@@ -29,6 +29,46 @@ const defaultSettings: AiSettingsType = {
   codexPath: "codex"
 };
 
+const bakedGoogleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
+const GOOGLE_MAPS_SETTINGS_EVENT = "basecamp-google-maps-settings";
+const GOOGLE_MAPS_ADMIN_CALLBACK = "__basecampAdminGoogleMapsReady";
+let googleMapsAdminScriptPromise: Promise<void> | null = null;
+
+type AdminGeocoderLocation = {
+  lat: () => number;
+  lng: () => number;
+};
+type AdminGeocoder = {
+  geocode: (request: {
+    address: string;
+    componentRestrictions?: { administrativeArea?: string; country?: string };
+    region?: string;
+  }) => Promise<{ results: Array<{ geometry: { location: AdminGeocoderLocation } }> }>;
+};
+type AdminStreetViewService = {
+  getPanorama: (request: {
+    location: { lat: number; lng: number };
+    radius: number;
+    source?: "outdoor" | "default";
+  }) => Promise<unknown>;
+};
+type AdminGoogleMapsWindow = Window & {
+  google?: {
+    maps: {
+      importLibrary: (name: "geocoding" | "streetView") => Promise<
+        | {
+            Geocoder: new () => AdminGeocoder;
+          }
+        | {
+            StreetViewService: new () => AdminStreetViewService;
+          }
+      >;
+    };
+  };
+  gm_authFailure?: () => void;
+  __basecampAdminGoogleMapsReady?: () => void;
+};
+
 export function AiSettings() {
   const storedSettings = useSyncExternalStore(
     subscribeToStoredSettings,
@@ -42,11 +82,18 @@ export function AiSettings() {
   const [pendingLoginId, setPendingLoginId] = useState("");
   const [loginUrl, setLoginUrl] = useState("");
   const [isLoginPending, setIsLoginPending] = useState(false);
+  const [mapsKey, setMapsKey] = useState("");
+  const [mapsStatus, setMapsStatus] = useState(
+    bakedGoogleMapsApiKey
+      ? "Google Maps key is baked in for this build. You can override it for this browser."
+      : "No baked Google Maps key found. Add one here or set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY."
+  );
 
   const providerModels = useMemo(
     () => models.filter((model) => model.provider === settings.provider || model.provider === "mock"),
     [models, settings.provider]
   );
+  const effectiveMapsKey = mapsKey.trim() || bakedGoogleMapsApiKey;
 
   function update(patch: Partial<AiSettingsType>) {
     const next = { ...settings, ...patch };
@@ -60,6 +107,81 @@ export function AiSettings() {
   function saveSettings(next: AiSettingsType) {
     window.localStorage.setItem("basecamp.aiSettings", JSON.stringify(redactForStorage(next)));
     window.dispatchEvent(new Event(STORED_SETTINGS_EVENT));
+  }
+
+  function loadMapsKeyFromStorage() {
+    return window.localStorage.getItem("basecamp.googleMapsApiKey") ?? "";
+  }
+
+  function saveMapsKey(nextKey = mapsKey) {
+    const trimmed = nextKey.trim();
+    if (trimmed) {
+      window.localStorage.setItem("basecamp.googleMapsApiKey", trimmed);
+      setMapsStatus("Google Maps key override saved for this browser. Reload the map if it is already open.");
+    } else {
+      window.localStorage.removeItem("basecamp.googleMapsApiKey");
+      setMapsStatus(
+        bakedGoogleMapsApiKey
+          ? "Using the baked-in Google Maps key for this build."
+          : "Google Maps key cleared. The startup map will use the non-Google fallback."
+      );
+    }
+    window.dispatchEvent(new Event(GOOGLE_MAPS_SETTINGS_EVENT));
+  }
+
+  async function checkMapsKey() {
+    const key = (mapsKey.trim() || bakedGoogleMapsApiKey).trim();
+    if (!key) {
+      setMapsStatus("Add a Google Maps API key before checking permissions.");
+      return;
+    }
+    setMapsStatus("Checking Maps JavaScript, Geocoding, and Street View...");
+    try {
+      (window as AdminGoogleMapsWindow).gm_authFailure = () => {
+        setMapsStatus(
+          "Google Maps authorization failed. Check billing, API activation, and HTTP referrer restrictions for this key."
+        );
+      };
+      await loadGoogleMapsForAdmin(key);
+      const mapsWindow = window as AdminGoogleMapsWindow;
+      const geocodingLibrary = (await mapsWindow.google?.maps.importLibrary("geocoding")) as
+        | { Geocoder: new () => AdminGeocoder }
+        | undefined;
+      const streetViewLibrary = (await mapsWindow.google?.maps.importLibrary("streetView")) as
+        | { StreetViewService: new () => AdminStreetViewService }
+        | undefined;
+      if (!geocodingLibrary?.Geocoder || !streetViewLibrary?.StreetViewService) {
+        setMapsStatus("Maps JavaScript loaded, but Google did not return Geocoding or Street View libraries.");
+        return;
+      }
+      const geocoder = new geocodingLibrary.Geocoder();
+      const geocoded = await geocoder.geocode({
+        address: "Salt Lake City, UT",
+        componentRestrictions: { administrativeArea: "UT", country: "US" },
+        region: "us"
+      });
+      const location = geocoded.results[0]?.geometry.location;
+      if (!location) {
+        setMapsStatus("Geocoding responded but did not return a Utah test location.");
+        return;
+      }
+      const streetView = new streetViewLibrary.StreetViewService();
+      await streetView.getPanorama({
+        location: { lat: location.lat(), lng: location.lng() },
+        radius: 500,
+        source: "outdoor"
+      });
+      setMapsStatus(
+        "Maps JavaScript, Geocoding, and Street View all responded for this browser key."
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      setMapsStatus(
+        /geocod|ApiNotActivated|REQUEST_DENIED/i.test(message)
+          ? "Maps JavaScript works, but this exact key cannot use Geocoding API. If Geocoding is enabled, verify the key belongs to that project and key API restrictions include Geocoding API."
+          : "Google Maps permission check failed. Verify Maps JavaScript API, Geocoding API, billing, Street View support, and HTTP referrer restrictions."
+      );
+    }
   }
 
   function applyModelCatalog(nextModels: ModelOption[], settingsSnapshot: AiSettingsType) {
@@ -385,6 +507,55 @@ export function AiSettings() {
             </>
           )}
         </div>
+
+        <div className="admin-panel">
+          <h2>Google Maps</h2>
+          <p className="muted">
+            The Startup Map uses Maps JavaScript, browser geocoding, and Street View. Restrict the
+            key to trusted HTTP referrers in Google Cloud.
+          </p>
+          <p className="result-meta">
+            Active key: <strong>{maskMapsKey(effectiveMapsKey)}</strong>
+          </p>
+          <label className="input-field">
+            <span>
+              <MapPinned size={15} aria-hidden="true" />
+              Google Maps API key
+            </span>
+            <input
+              type="password"
+              value={mapsKey}
+              onChange={(event) => setMapsKey(event.target.value)}
+              onFocus={() => {
+                if (!mapsKey) setMapsKey(loadMapsKeyFromStorage());
+              }}
+              placeholder={
+                bakedGoogleMapsApiKey ? "Using baked-in key unless overridden" : "Paste Maps key"
+              }
+            />
+          </label>
+          <div className="button-row">
+            <button className="primary-button" type="button" onClick={() => saveMapsKey()}>
+              <CheckCircle2 size={16} aria-hidden="true" />
+              Save maps key
+            </button>
+            <button className="ghost-button" type="button" onClick={checkMapsKey}>
+              <Shield size={16} aria-hidden="true" />
+              Check permissions
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() => {
+                setMapsKey("");
+                saveMapsKey("");
+              }}
+            >
+              Use baked-in key
+            </button>
+          </div>
+          <p className="status-line">{mapsStatus}</p>
+        </div>
       </div>
 
       <p className="status-line">{status}</p>
@@ -405,6 +576,37 @@ function redactForTransport(settings: AiSettingsType) {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function maskMapsKey(key: string) {
+  if (!key) return "none";
+  return `${key.slice(0, 6)}...${key.slice(-4)}`;
+}
+
+function loadGoogleMapsForAdmin(apiKey: string) {
+  const mapsWindow = window as AdminGoogleMapsWindow;
+  if (mapsWindow.google?.maps.importLibrary) return Promise.resolve();
+  if (googleMapsAdminScriptPromise) return googleMapsAdminScriptPromise;
+
+  googleMapsAdminScriptPromise = new Promise<void>((resolve, reject) => {
+    mapsWindow.__basecampAdminGoogleMapsReady = () => {
+      delete mapsWindow.__basecampAdminGoogleMapsReady;
+      resolve();
+    };
+    const script = document.createElement("script");
+    const params = new URLSearchParams({
+      key: apiKey,
+      v: "weekly",
+      loading: "async",
+      callback: GOOGLE_MAPS_ADMIN_CALLBACK
+    });
+    script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
+    script.async = true;
+    script.onerror = () => reject(new Error("Maps JavaScript API failed to load."));
+    document.head.appendChild(script);
+  });
+
+  return googleMapsAdminScriptPromise;
 }
 
 const STORED_SETTINGS_EVENT = "basecamp-ai-settings";

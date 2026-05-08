@@ -1,20 +1,20 @@
-import fs from "node:fs";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import {
+  approveCompanyDraft,
+  companyDraftInputSchema,
+  createCompanyDraft,
+  listCompanyDrafts,
+  rejectCompanyDraft
+} from "@/lib/companyDrafts";
 
-const schema = z.object({
-  name: z.string().min(1),
-  website: z.string().optional(),
-  workEmail: z.string().email().or(z.literal("")).optional(),
-  sector: z.string().optional(),
-  stage: z.string().optional(),
-  employees: z.string().optional(),
-  address: z.string().optional(),
-  description: z.string().optional(),
-  hiringStatus: z.string().optional()
-});
+export function GET() {
+  return NextResponse.json({
+    drafts: listCompanyDrafts().map((draft) => ({
+      ...draft,
+      tokenHash: undefined
+    }))
+  });
+}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -23,31 +23,52 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "A JSON request body is required." }, { status: 400 });
   }
-  const parsed = schema.safeParse(body);
+  const parsed = companyDraftInputSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Company name and valid email are required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Company name is required. Work email must be valid when provided." },
+      { status: 400 }
+    );
   }
 
-  const id = `draft_${randomUUID()}`;
-  const storageDir = path.resolve(
-    process.cwd(),
-    process.env.BASECAMP_STORAGE_DIR ?? ".basecamp-data",
-    "company-drafts"
-  );
-  fs.mkdirSync(storageDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(storageDir, `${id}.json`),
-    JSON.stringify(
-      {
-        id,
-        status: "queued",
-        verificationStatus: parsed.data.workEmail ? "pending_email" : "needs_contact",
-        submittedAt: new Date().toISOString(),
-        payload: parsed.data
-      },
-      null,
-      2
-    )
-  );
-  return NextResponse.json({ id, reviewStatus: "queued", verificationStatus: "pending_email" });
+  const result = await createCompanyDraft(parsed.data, request.url);
+  return NextResponse.json({
+    id: result.draft.id,
+    reviewStatus: result.draft.status,
+    verificationStatus: result.draft.verificationStatus,
+    domainMatch: result.draft.domainMatch,
+    magicLinkSent: result.magicLinkSent,
+    emailDeliveryStatus: result.draft.emailDeliveryStatus
+  });
+}
+
+export async function PATCH(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "A JSON request body is required." }, { status: 400 });
+  }
+
+  const input = body as { id?: string; action?: string; reviewerNote?: string };
+  if (!input.id || !input.action) {
+    return NextResponse.json({ error: "Draft id and action are required." }, { status: 400 });
+  }
+
+  try {
+    if (input.action === "approve") {
+      const result = approveCompanyDraft(input.id, input.reviewerNote);
+      return NextResponse.json({ draft: { ...result.draft, tokenHash: undefined }, company: result.company });
+    }
+    if (input.action === "reject") {
+      const draft = rejectCompanyDraft(input.id, input.reviewerNote);
+      return NextResponse.json({ draft: { ...draft, tokenHash: undefined } });
+    }
+    return NextResponse.json({ error: "Unsupported draft action." }, { status: 400 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unable to update draft." },
+      { status: 400 }
+    );
+  }
 }

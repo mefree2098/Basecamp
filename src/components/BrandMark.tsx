@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export function BrandMark() {
   return (
-    <Link className="brand-mark" href="/" aria-label="Basecamp home">
+    <Link className="brand-mark" href="/" aria-label="Startup State home">
       <Image
         src="/brand/basecamp-app-icon.png"
         alt=""
@@ -13,8 +13,8 @@ export function BrandMark() {
         priority
       />
       <span>
-        <strong>Basecamp</strong>
-        <small>Startup State guide</small>
+        <strong>Startup State</strong>
+        <small>Utah</small>
       </span>
     </Link>
   );

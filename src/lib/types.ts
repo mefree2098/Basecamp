@@ -40,6 +40,7 @@ export type Company = {
   displayType: string;
   linkedin?: string;
   address: string;
+  location: string;
   description: string;
   website?: string;
   stage?: string;
@@ -48,6 +49,13 @@ export type Company = {
   hiringStatus: "unknown" | "hiring" | "not_hiring";
   foundedYear?: number;
   jobsUrl?: string;
+  atsUrl?: string;
+  jobPostings?: Array<{
+    title: string;
+    location?: string;
+    url?: string;
+    type?: string;
+  }>;
   gallery: string[];
   coordinates: {
     lat: number;

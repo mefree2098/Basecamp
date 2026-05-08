@@ -1,6 +1,16 @@
 # Basecamp
 
-Basecamp is a working Startup State prototype: a founder navigator, resource explorer, startup map, company submission flow, and admin console in one cheap-to-host Next.js application.
+Basecamp is the Startup State prototype: a founder navigator, resource explorer, Utah startup map, company submission flow, and admin console in one cheap-to-host Next.js application.
+
+## What It Includes
+
+- **Utah Startup Map**: Google Maps-backed startup ecosystem map with clustering, zoom controls, Street View, satellite mode, heatmap mode, sector chips, fast filtering, URL-shareable filter state, CSV export, saved lists, comparison, and partner/customer discovery actions.
+- **Server-side geocoding cache**: company addresses are geocoded on the server and persisted under `.basecamp-data` so Google Geocoding API usage stays efficient.
+- **Company logos**: startup websites are scanned server-side for favicons, touch icons, and manifest icons, then cached and shown on markers, popovers, drawers, and profile pages.
+- **Self-service profiles**: companies can submit profile drafts with rich company details, jobs, ATS/careers links, uploaded gallery photos, and website/domain verification.
+- **Claim verification**: profile claims use a work-email magic link and domain matching against the company website before admin review.
+- **Admin console**: operators can import CSV updates, review pending company-profile diffs, approve/reject drafts, and manage provider settings.
+- **AI guide**: the app runs without external model credentials and can be upgraded through `/admin/ai` with hosted providers or Codex path integration.
 
 ## Run Locally
 
@@ -11,7 +21,46 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-The app runs without external credentials. AI defaults to a deterministic local guide. Add API keys or configure the Codex path from `/admin/ai` to use hosted model providers.
+The app works without external credentials, but Google Maps, geocoding, SMTP email, and hosted AI providers are enabled through environment variables.
+
+## Environment
+
+Copy `.env.example` to `.env.local` and fill only the services you want enabled.
+
+Key settings:
+
+```bash
+BASECAMP_STORAGE_DIR=.basecamp-data
+
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=
+GOOGLE_MAPS_GEOCODING_API_KEY=
+BASECAMP_GEOCODE_BATCH_SIZE=260
+
+BASECAMP_ICON_BATCH_SIZE=32
+BASECAMP_ICON_CONCURRENCY=10
+
+BASECAMP_PUBLIC_URL=http://localhost:3000
+BASECAMP_EMAIL_PROVIDER=smtp
+BASECAMP_EMAIL_FROM=basecamp@ntechr.com
+BASECAMP_SMTP_HOST=mail.freestonefamily.com
+BASECAMP_SMTP_PORT=587
+BASECAMP_SMTP_SECURE=false
+BASECAMP_SMTP_REQUIRE_TLS=true
+BASECAMP_SMTP_USER=basecamp@ntechr.com
+BASECAMP_SMTP_PASS=
+```
+
+Local runtime caches and uploads live in `.basecamp-data`, which is intentionally ignored by git.
+
+## Data And Admin Workflows
+
+- Seed CSV/JSON data is loaded from the repo.
+- Admin imports and approved company drafts are written as local overrides in `.basecamp-data`.
+- Company draft verification links land at `/api/company-drafts/verify`.
+- Gallery uploads are served from `/api/uploads/gallery/:filename`.
+- ATS/careers previews are imported through `/api/ats/preview`.
+- Company icon discovery is exposed at `/api/company-icons` and refreshes cached logos without blocking the map page.
 
 ## Verification
 
@@ -23,12 +72,12 @@ That runs linting, type checks, unit tests, production build, and `npm audit`.
 
 ## Deployment Shape
 
-The cheapest production-friendly shape is one container:
+The simplest production-friendly shape is one container:
 
 - Next.js server app
 - CSV/JSON seed data
 - writable storage mounted at `.basecamp-data`
-- optional provider keys supplied as environment variables
+- optional provider, Google Maps, SMTP, and AI keys supplied as environment variables
 
 Azure Container Apps or Azure App Service for Containers is the likely first target. AWS App Runner and GCP Cloud Run are also supported by the included `Dockerfile`.
 

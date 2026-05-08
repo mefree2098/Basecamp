@@ -2,20 +2,68 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bot, Check, ClipboardList, DatabaseZap, ShieldCheck, Upload } from "lucide-react";
+import {
+  Bot,
+  Check,
+  ClipboardList,
+  DatabaseZap,
+  MapPinned,
+  ShieldCheck,
+  Upload,
+  X
+} from "lucide-react";
+
+type DraftChange = {
+  field: string;
+  before: string;
+  after: string;
+};
+
+type CompanyDraftSummary = {
+  id: string;
+  status: string;
+  verificationStatus: string;
+  submittedAt: string;
+  emailDeliveryStatus: string;
+  domainMatch?: {
+    ok: boolean;
+    reason: string;
+    emailDomain?: string;
+    websiteDomain?: string;
+  };
+  changes?: DraftChange[];
+  payload?: {
+    name: string;
+    workEmail?: string;
+  };
+};
 
 export function AdminConsole({
   resourceCount,
   companyCount,
-  needsReview
+  needsReview,
+  initialDrafts
 }: {
   resourceCount: number;
   companyCount: number;
   needsReview: number;
+  initialDrafts: CompanyDraftSummary[];
 }) {
   const [kind, setKind] = useState<"resources" | "companies">("resources");
   const [csv, setCsv] = useState("");
   const [status, setStatus] = useState("");
+  const [drafts, setDrafts] = useState<CompanyDraftSummary[]>(initialDrafts);
+  const [draftStatus, setDraftStatus] = useState("");
+
+  async function loadDrafts() {
+    const response = await fetch("/api/company-drafts");
+    const result = (await response.json()) as { drafts?: CompanyDraftSummary[]; error?: string };
+    if (result.error) {
+      setDraftStatus(result.error);
+      return;
+    }
+    setDrafts(result.drafts ?? []);
+  }
 
   async function importCsv() {
     setStatus("Importing...");
@@ -26,6 +74,22 @@ export function AdminConsole({
     });
     const result = (await response.json()) as { count?: number; error?: string };
     setStatus(result.error ? result.error : `Imported ${result.count ?? 0} ${kind}.`);
+  }
+
+  async function reviewDraft(id: string, action: "approve" | "reject") {
+    setDraftStatus(`${action === "approve" ? "Approving" : "Rejecting"} draft...`);
+    const response = await fetch("/api/company-drafts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action })
+    });
+    const result = (await response.json()) as { error?: string };
+    if (result.error) {
+      setDraftStatus(result.error);
+      return;
+    }
+    setDraftStatus(action === "approve" ? "Draft approved and published." : "Draft rejected.");
+    await loadDrafts();
   }
 
   return (
@@ -61,7 +125,7 @@ export function AdminConsole({
         <Link className="stat-card stat-card--link" href="/admin/ai">
           <Bot size={20} aria-hidden="true" />
           <strong>AI</strong>
-          <span>Providers and Codex auth</span>
+          <span>Providers, Codex auth, and maps key</span>
         </Link>
       </div>
 
@@ -92,13 +156,67 @@ export function AdminConsole({
 
         <div className="admin-panel">
           <h2>Review queue</h2>
-          <div className="queue-item">
-            <Check size={17} aria-hidden="true" />
-            <div>
-              <strong>Company claims</strong>
-              <span>Domain and work-email checks are queued before publish.</span>
-            </div>
+          <div className="draft-review-list">
+            {drafts.length > 0 ? (
+              drafts.slice(0, 8).map((draft) => {
+                const hasDomainMatch = draft.domainMatch?.ok ?? false;
+                return (
+                  <article className="draft-review-card" key={draft.id}>
+                    <div className="draft-review-card__heading">
+                      <div>
+                        <strong>{draft.payload?.name ?? "Untitled company draft"}</strong>
+                        <span>
+                          {draft.verificationStatus.replace("_", " ")} · {draft.status.replace("_", " ")}
+                        </span>
+                      </div>
+                      <span className={hasDomainMatch ? "status-pill hiring" : "status-pill"}>
+                        {hasDomainMatch ? "Domain match" : "Manual check"}
+                      </span>
+                    </div>
+                    <p>{draft.domainMatch?.reason ?? "This draft was created before domain matching existed."}</p>
+                    <div className="draft-change-list">
+                      {(draft.changes ?? []).slice(0, 5).map((change) => (
+                        <div key={`${draft.id}-${change.field}`}>
+                          <span>{change.field}</span>
+                          <strong>{change.after}</strong>
+                          {change.before && <small>Was: {change.before}</small>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="card-actions">
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={() => void reviewDraft(draft.id, "approve")}
+                        disabled={draft.status === "approved"}
+                      >
+                        <Check size={16} aria-hidden="true" />
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => void reviewDraft(draft.id, "reject")}
+                        disabled={draft.status === "rejected"}
+                      >
+                        <X size={16} aria-hidden="true" />
+                        Reject
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
+            ) : (
+              <div className="queue-item">
+                <Check size={17} aria-hidden="true" />
+                <div>
+                  <strong>Company claims</strong>
+                  <span>Domain and work-email checks appear here before publish.</span>
+                </div>
+              </div>
+            )}
           </div>
+          {draftStatus && <p className="status-line">{draftStatus}</p>}
           <div className="queue-item">
             <Check size={17} aria-hidden="true" />
             <div>
@@ -107,10 +225,10 @@ export function AdminConsole({
             </div>
           </div>
           <div className="queue-item">
-            <Check size={17} aria-hidden="true" />
+            <MapPinned size={17} aria-hidden="true" />
             <div>
-              <strong>Dedupe review</strong>
-              <span>Seed data is preserved, but operators can replace it with corrected profiles.</span>
+              <strong>Maps readiness</strong>
+              <span>Google Maps key checks live beside AI settings under Admin.</span>
             </div>
           </div>
         </div>

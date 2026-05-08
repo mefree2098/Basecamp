@@ -9,6 +9,7 @@ export function GET(request: Request) {
     sector: url.searchParams.get("sector") ?? undefined,
     stage: url.searchParams.get("stage") ?? undefined,
     employees: url.searchParams.get("employees") ?? undefined,
+    location: url.searchParams.get("location") ?? undefined,
     hiring: url.searchParams.get("hiring") ?? undefined
   });
 

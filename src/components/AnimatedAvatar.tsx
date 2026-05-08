@@ -8,6 +8,7 @@ export type GuideCompanionState = "idle" | "thinking" | "speaking" | "ready" | "
 const spriteColumns = 8;
 const spriteRows = 6;
 const spriteFrameSize = 181;
+const compactSpriteFrameSize = 86;
 
 const stateCopy: Record<GuideCompanionState, string> = {
   idle: "Basecamp guide ready",
@@ -39,6 +40,7 @@ export function AnimatedAvatar({
   const [frameIndex, setFrameIndex] = useState(0);
   const sequence = useMemo(() => petRows[state], [state]);
   const frame = sequence.frames[frameIndex % sequence.frames.length];
+  const renderedFrameSize = compact ? compactSpriteFrameSize : spriteFrameSize;
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -62,11 +64,13 @@ export function AnimatedAvatar({
         className="codex-pet__sprite"
         style={
           {
-            backgroundPosition: `-${frame * spriteFrameSize}px -${
-              sequence.row * spriteFrameSize
+            width: `${renderedFrameSize}px`,
+            height: `${renderedFrameSize}px`,
+            backgroundPosition: `-${frame * renderedFrameSize}px -${
+              sequence.row * renderedFrameSize
             }px`,
-            backgroundSize: `${spriteColumns * spriteFrameSize}px ${
-              spriteRows * spriteFrameSize
+            backgroundSize: `${spriteColumns * renderedFrameSize}px ${
+              spriteRows * renderedFrameSize
             }px`
           } as CSSProperties
         }
