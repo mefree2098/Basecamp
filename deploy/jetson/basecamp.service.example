@@ -1,0 +1,20 @@
+[Unit]
+Description=Basecamp Startup State
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=matt
+Group=matt
+WorkingDirectory=/mnt/nvme/apps/Basecamp
+EnvironmentFile=/mnt/nvme/apps/Basecamp/.env.production
+Environment=NODE_OPTIONS=--max-old-space-size=384
+ExecStart=/usr/bin/node .next/standalone/server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

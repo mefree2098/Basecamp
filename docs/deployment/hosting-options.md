@@ -11,6 +11,17 @@ npm run dev
 
 No database, map key, or AI key is required. Seed data lives in `data/`; operator uploads write to `.basecamp-data/`.
 
+## Jetson Orin Nano
+
+Use this when hosting on the shared NVIDIA Jetson behind HomeBrain's Caddy reverse proxy:
+
+- Run the production server on `127.0.0.1:4302`.
+- Set `BASECAMP_PUBLIC_URL=https://basecamp.ntechr.com`.
+- Store writable data at `/mnt/nvme/apps/Basecamp/.basecamp-data`.
+- Use `/api/healthz` as the HomeBrain reverse proxy health path.
+
+See [Jetson Orin Nano Deployment](./jetson-orin-nano.md).
+
 ## Azure, Recommended First
 
 Cheapest simple options:

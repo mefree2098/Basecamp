@@ -98,6 +98,10 @@ The simplest production-friendly shape is one container:
 - writable storage mounted at `.basecamp-data`
 - optional provider, Google Maps, SMTP, and AI keys supplied as environment variables
 
+The production app exposes `GET /api/healthz` and `GET /healthz` for reverse proxies and container health checks. Health returns `503` if the runtime storage path is not writable.
+
 Azure Container Apps or Azure App Service for Containers is the likely first target. AWS App Runner and GCP Cloud Run are also supported by the included `Dockerfile`.
+
+For the shared NVIDIA Jetson Orin Nano Super host behind HomeBrain's Caddy reverse proxy, use `PORT=4302`, `HOSTNAME=127.0.0.1`, and `https://basecamp.ntechr.com`; see [docs/deployment/jetson-orin-nano.md](./docs/deployment/jetson-orin-nano.md).
 
 See [docs/deployment/hosting-options.md](./docs/deployment/hosting-options.md).
