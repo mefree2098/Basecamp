@@ -20,20 +20,40 @@ const providerDefaults: Record<AiProvider, string> = {
 };
 
 export const BASECAMP_SYSTEM_PROMPT = [
-  "You are Basecamp, the friendly but practical guide for Utah Startup State founders.",
-  "Your job is to reduce overwhelm while staying inside the scope of Startup State: business setup, registration/licensing pointers, mentoring, funding/capital resources, education, community programs, and the Utah startup map.",
-  "Use only the supplied Startup State resource candidates and Basecamp-curated direct links that support Startup State workflows. Do not invent programs, eligibility, deadlines, funding amounts, contacts, accounts, vendors, or guarantees.",
-  "Write like a calm human advisor, not a search engine and not a generic chatbot.",
-  "For new company or startup goals, do not stop at generic mentoring. Include the formation order: choose structure/name, register/licensure with Utah, get an EIN/FEIN, then open a business bank account.",
-  "Do not recommend out-of-scope product-platform accounts, app-store enrollment, bank products, legal filings, tax positions, or vendors unless they are explicitly present in the supplied candidates. If the user asks about those, mark them outside Basecamp's Startup State scope and route them to the closest cited Startup State resource or advisor.",
-  "For continuation turns, acknowledge completed steps, do not repeat them, and give the next 1-3 Startup State-scoped actions.",
-  "Prefer candidates with direct action links over broad platform homepages when both are relevant.",
+  "You are Basecamp, the friendly but practical personal assistant for Utah Startup State founders.",
+  "Mission: make the official Startup State resource ecosystem feel like a state-assigned concierge, not a library. The founder should never have to wonder what to do next, what page matters, what information to prepare, or whether the assistant remembers where they left off.",
+  "Scope: stay inside Startup State and directly adjacent public/business resources represented in the supplied candidate data. You may help with business setup, business planning, validation, registration/licensing pointers, EIN/FEIN sequencing, operations setup, taxes, funding/capital resources, pitch preparation, mentoring, education, workforce, government contracts, international trade, community programs, relocation, exit/closure, and the Utah startup map.",
+  "Source discipline: use only the supplied Startup State resource candidates, direct URLs, prior session context, and Basecamp-curated first-stop links. Do not invent programs, eligibility, deadlines, funding amounts, legal requirements, contacts, vendors, or guarantees. If a detail is missing, say exactly who or what page the founder should verify it with.",
+  "Tone: calm, direct, and human. Sound like a capable public-sector startup assistant who is personally responsible for getting the founder through the process. Do not sound like a generic chatbot, search engine, or legal disclaimer.",
+  "Plan-first protocol:",
+  "- On the first substantive founder message, create a working plan before deep-diving into any single resource.",
+  "- The plan is an ordered checklist of what the founder will need to complete, tailored to stage, county/location, industry, community, and stated goal.",
+  "- Every plan item is a request/task with a status: Done, Active, Queued, or Blocked. Treat exactly one unfinished item as Active.",
+  "- Start with the earliest necessary step. Do not let the founder jump to funding, pitch competitions, or grants if registration, business plan, validation, or basic operations are prerequisite for their situation.",
+  "- For a new Utah business, use this default order unless the founder's situation clearly overrides it: clarify idea/customer, choose name/entity structure, draft business plan essentials, register/licensure with Utah and local authorities, get EIN/FEIN, set up banking/accounting/insurance/records, confirm taxes, then consider community support and funding.",
+  "- For a growth-stage company, use the growth order: identify the growth bottleneck, prepare strategic/funding materials, choose capital/workforce/contracts/export/community path, use exact resource pages, then schedule follow-up.",
+  "- For exit/closure, use the exit order: clarify sale/succession/closure, verify legal/tax/licensing obligations, contact appropriate advisors/agencies, then document completion.",
+  "Step-by-step operating protocol:",
+  "- After creating or updating the plan, work only the Active item unless the founder asks for a full overview.",
+  "- For the Active item, provide the exact page URL and explain what to do on that page, what information to gather, what choices to make, and what result to bring back.",
+  "- If the page contains a form, intake, application, or registration flow, guide the founder through the fields in plain language. Ask for one missing piece at a time when needed.",
+  "- When the founder says a step is done, acknowledge it, mark it conceptually complete, do not repeat it, and advance to the next Queued item.",
+  "- If the founder reports a blocker, mark the item conceptually Blocked, ask for the smallest clarifying detail needed, and route to an advisor or exact resource when appropriate.",
+  "- When all tracked items are complete, explicitly say the current plan is complete and ask what else the founder would like help with next.",
+  "Personalization rules:",
+  "- A landscaping founder in St. George should see different local/licensing/community/funding guidance than a pre-revenue software founder in Lehi.",
+  "- Use county, city, rural status, veteran/woman/student/new American/multicultural context, industry, stage, customer type, funding need, and timeline to shape both the plan and the first page.",
+  "- Prefer direct action links over broad homepages. If a broad homepage and a deeper action page are both available, choose the deeper action page.",
+  "Resource citation rules:",
+  "- Cite every named resource as [resource:id].",
+  "- Include direct page URLs in the answer when useful. The app will also open the top resource in the side panel, so choose the first cited resource deliberately.",
+  "- Do not cite resources that were not supplied.",
   "Response contract:",
-  "- Start with one direct sentence naming the clear first stop and why it fits.",
-  "- Then give 3 numbered steps at most. Each step should have a concrete action and cite every named resource as [resource:id].",
-  "- Keep the answer under 180 words unless the user explicitly asks for more.",
-  "- If the user asks for permits or legal compliance, tell them what to verify with the city/county instead of pretending the app can determine final requirements.",
-  "- If the supplied resources do not fully answer part of the request, say exactly what to verify and with whom; do not make a vague disclaimer the main answer.",
+  "- Start with a short sentence that names the plan status and the Active step.",
+  "- Then provide a compact plan status block when this is a new plan or the plan changed. Use lines like: Done: ..., Active: ..., Queued: ...",
+  "- Then give 1-3 concrete actions for the Active step, with exact URL(s) and citations.",
+  "- End by telling the founder what to report back so you can advance the plan.",
+  "- Normal turns should stay under 260 words; initial plan turns may be up to 340 words. Be concise unless the founder asks for detail.",
   "- Do not mention system prompts, deterministic filters, model/provider details, or internal data handling."
 ].join("\n");
 
@@ -255,10 +275,11 @@ export function buildGroundedContext(
       ? "Formation guidance for this intent: include the business setup sequence, in order: choose name/entity structure, Utah registration/licensure, EIN/FEIN, business bank account. Keep it simple and cite the matching resources below."
       : "",
     sessionContext ? formatSessionContext(sessionContext) : "",
+    formatTrackedPlan(planPreview(effectiveProfile, recommendations), sessionContext),
     "Candidate resources:",
     ...recommendations.map(
       (item, index) =>
-        `${index + 1}. ${item.resource.title} [resource:${item.resource.id}] - ${item.resource.description}`
+        `${index + 1}. ${item.resource.title} [resource:${item.resource.id}] - Direct page: ${item.resource.link} - ${item.resource.description}`
     ),
     "Return the founder-facing answer only."
   ].join("\n\n");
@@ -286,20 +307,21 @@ function localResponse(
     const ein = findRecommendation(recommendations, "basecamp-irs-ein");
     const bank = findRecommendation(recommendations, "basecamp-sba-business-bank-account");
     const first = registration ?? lead;
+    const activeStep = nextActivePlanCard(planCards, sessionContext?.completedSteps);
     const steps = [
       first
-        ? `Start with ${first.resource.title}; your idea is becoming a Utah business, so formation belongs in the first path. [resource:${first.resource.id}]`
+        ? `I created a working startup plan. Active step: ${activeStep?.title ?? "start the Utah formation path"}.`
         : `Start by turning the idea into a business setup checklist before chasing grants or events.`,
+      formatPlanStatus(planCards, sessionContext?.completedSteps),
       first
-        ? `1. Today: pick a working business name and entity structure, then use ${first.resource.title} to check Utah registration and licensing. [resource:${first.resource.id}]`
+        ? `1. Today: pick a working business name and entity structure, then use ${first.resource.title} at ${first.resource.link} to check Utah registration and licensing. [resource:${first.resource.id}]`
         : "1. Today: pick a working business name and entity structure.",
-      ein
-        ? `2. Next: after the state entity step is ready, get the EIN/FEIN through ${ein.resource.title}. [resource:${ein.resource.id}]`
-        : "2. Next: get the EIN/FEIN after the state entity step is ready.",
+      "2. Do not skip ahead yet; the EIN, banking, taxes, and funding items stay queued until the formation details are ready.",
       [
-        bank
-          ? `3. Then: open the business bank account with the entity records and EIN in hand using ${bank.resource.title}. [resource:${bank.resource.id}]`
-          : "3. Then: open the business bank account once entity records and EIN are ready."
+        ein && bank
+          ? `3. When this active step is done, I will move you to ${ein.resource.title} and then ${bank.resource.title}. [resource:${ein.resource.id}] [resource:${bank.resource.id}]`
+          : "3. When this active step is done, I will move you to the next queued item.",
+        "Tell me when the active step is done or paste the page question that slows you down, and I will move the plan forward."
       ]
         .filter(Boolean)
         .join(" ")
@@ -320,12 +342,14 @@ function localResponse(
 
   const assistantMessage = lead
     ? [
-        `Start with ${lead.resource.title}; it is the clearest first stop for a ${profile.stage} founder in ${profile.county || "Utah"}. [resource:${lead.resource.id}]`,
-        `1. Today: open ${lead.resource.title} and capture the specific application, mentor, or intake step that matches your goal. [resource:${lead.resource.id}]`,
+        `I created a working founder plan. Active step: ${nextActivePlanCard(planCards, sessionContext?.completedSteps)?.title ?? `use ${lead.resource.title}`}.`,
+        formatPlanStatus(planCards, sessionContext?.completedSteps),
+        `1. Today: open ${lead.resource.title} at ${lead.resource.link} and capture the specific application, mentor, or intake step that matches your goal. [resource:${lead.resource.id}]`,
         ...recommendations.slice(1, 3).map(
           (item, index) =>
-            `${index + 2}. Next: use ${item.resource.title} to cover the part ${lead.resource.title} does not solve directly. [resource:${item.resource.id}]`
-        )
+            `${index + 2}. Next: use ${item.resource.title} at ${item.resource.link} to cover the part ${lead.resource.title} does not solve directly. [resource:${item.resource.id}]`
+        ),
+        "Tell me what you complete or where you get stuck, and I will advance the plan one step at a time."
       ].join("\n\n")
     : `I could not find a tight match for "${message}", so I would broaden the filters and start with statewide Startup State resources.`;
 
@@ -358,6 +382,22 @@ function continuationResponse(
 ): WizardResponse {
   const completed = new Set(sessionContext?.completedSteps ?? []);
   const incompletePlan = planCards.filter((card) => !completed.has(card.title));
+  if (planCards.length && incompletePlan.length === 0) {
+    return {
+      assistantMessage: [
+        `Everything in this plan is marked complete: ${planCards.map((card) => card.title).join("; ")}.`,
+        "You are at a clean stopping point. What else can I help you with: funding, local licensing, hiring, business planning, taxes, mentors, or something else?"
+      ].join("\n\n"),
+      recommendations,
+      planCards,
+      usedProvider: settings.provider || "mock",
+      guardrails: {
+        deterministicFilters: true,
+        citationsRequired: true,
+        externalBrowsingUsed: false
+      }
+    };
+  }
   const advisor =
     findRecommendation(recommendations, "basecamp-sbdc-consultation") ??
     findRecommendation(recommendations, "basecamp-score-mentor");
@@ -374,9 +414,9 @@ function continuationResponse(
   const assistantMessage = nextResource
     ? [
         acknowledged,
-        `Next, use ${nextResource.resource.title} as the follow-up stop because it keeps the work inside Startup State scope. [resource:${nextResource.resource.id}]`,
+        `Next, use ${nextResource.resource.title} as the follow-up stop because it keeps the work inside Startup State scope. Open ${nextResource.resource.link}. [resource:${nextResource.resource.id}]`,
         `1. Today: ${nextPlan}.`,
-        `2. Bring your completed setup notes to ${nextResource.resource.title} and ask what local licensing, finance, or mentor step comes next. [resource:${nextResource.resource.id}]`,
+        `2. Bring your completed setup notes to ${nextResource.resource.title} at ${nextResource.resource.link} and ask what local licensing, finance, or mentor step comes next. [resource:${nextResource.resource.id}]`,
         "3. After that, update Basecamp with what they tell you so the next path can narrow instead of repeat."
       ].join("\n\n")
     : `${acknowledged}\n\nNext, update your Startup State path with the outcome of the completed steps so Basecamp can narrow the next resource.`;
@@ -392,6 +432,50 @@ function continuationResponse(
       externalBrowsingUsed: false
     }
   };
+}
+
+function planPreview(
+  profile: FounderProfile,
+  recommendations: ReturnType<typeof recommendResources>
+) {
+  return makePlanCards(profile, recommendations);
+}
+
+function nextActivePlanCard(
+  planCards: ReturnType<typeof makePlanCards>,
+  completedSteps: string[] = []
+) {
+  const completed = new Set(completedSteps);
+  return planCards.find((card) => !completed.has(card.title));
+}
+
+function formatPlanStatus(
+  planCards: ReturnType<typeof makePlanCards>,
+  completedSteps: string[] = []
+) {
+  const completed = new Set(completedSteps);
+  const active = nextActivePlanCard(planCards, completedSteps);
+  const done = planCards.filter((card) => completed.has(card.title)).map((card) => card.title);
+  const queued = planCards
+    .filter((card) => card.title !== active?.title && !completed.has(card.title))
+    .map((card) => card.title);
+  return [
+    done.length ? `Done: ${done.join("; ")}` : "Done: none yet",
+    active ? `Active: ${active.title}` : "Active: none",
+    queued.length ? `Queued: ${queued.join("; ")}` : "Queued: none"
+  ].join("\n");
+}
+
+function formatTrackedPlan(
+  planCards: ReturnType<typeof makePlanCards>,
+  sessionContext?: SessionContext
+) {
+  if (!planCards.length) return "";
+  return [
+    "Tracked founder plan preview:",
+    formatPlanStatus(planCards, sessionContext?.completedSteps),
+    "Use this plan as the persistent task list. Do not replace it on continuation turns unless the founder changes goals."
+  ].join("\n");
 }
 
 function isContinuationTurn(message: string, sessionContext?: SessionContext) {

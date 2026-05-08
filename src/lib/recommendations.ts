@@ -37,12 +37,147 @@ export function makePlanCards(profile: FounderProfile, recommendations: Recommen
         status: "suggested" as const
       },
       {
-        title: "Register with Utah, then get the EIN/FEIN",
+        title: "Draft the core business plan answers",
         dueWindow: "7_days" as const,
         status: "suggested" as const
       },
       {
-        title: "Open the business bank account after entity records are ready",
+        title: "Register with Utah and verify local licensure",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Get the EIN/FEIN after state registration is ready",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Set up business operations, banking, insurance, and records",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Confirm taxes, community support, and funding next steps",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      }
+    ];
+  }
+
+  if (profile.stage === "idea") {
+    return [
+      {
+        title: "Clarify the problem, customer, and first business idea",
+        dueWindow: "today" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Build basic business skills and talk with a mentor",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Validate the idea with real potential customers",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Turn the validated idea into a simple business plan",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      }
+    ];
+  }
+
+  if (profile.stage === "validate") {
+    return [
+      {
+        title: "Validate customer demand and the problem worth solving",
+        dueWindow: "today" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Build or refine the first product or service offer",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Define brand, marketing, and first sales channel",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Prepare the registration and operations path",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      }
+    ];
+  }
+
+  if (profile.stage === "fund") {
+    return [
+      {
+        title: "Prepare business plan, financials, and use-of-funds story",
+        dueWindow: "today" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Choose the right funding path: grant, loan, competition, angel, or VC",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Prepare the pitch, application, or lender packet",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Submit or request introductions through the matched resources",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      }
+    ];
+  }
+
+  if (profile.stage === "grow") {
+    return [
+      {
+        title: "Pick the growth bottleneck: capital, talent, contracts, exports, or operations",
+        dueWindow: "today" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Use growth-stage funding or strategic planning resources",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Build the workforce, community, or government-contracting path",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Document follow-ups and schedule the next expansion milestone",
+        dueWindow: "30_days" as const,
+        status: "suggested" as const
+      }
+    ];
+  }
+
+  if (profile.stage === "exit") {
+    return [
+      {
+        title: "Clarify whether the goal is sale, succession, closure, or relocation",
+        dueWindow: "today" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Review legal, tax, licensing, and workforce obligations",
+        dueWindow: "7_days" as const,
+        status: "suggested" as const
+      },
+      {
+        title: "Contact the most relevant advisor or agency before filing changes",
         dueWindow: "30_days" as const,
         status: "suggested" as const
       }
@@ -99,6 +234,7 @@ function scoreResource(profile: FounderProfile, resource: Resource) {
 
   if (isFormationIntent(profile) && isFormationResource(resource)) score += 22;
   if (mentionsBusinessBanking(profile.goal) && /bank account|business bank/.test(text)) score += 18;
+  score += directLinkScore(resource.link);
 
   if (resource.freshness.status === "needs_review") score -= 6;
   return Math.max(0, score);
@@ -147,6 +283,18 @@ function isFormationResource(resource: Resource) {
 
 function mentionsBusinessBanking(goal: string) {
   return /bank|finance|money|account|startup costs/i.test(goal);
+}
+
+function directLinkScore(link: string) {
+  try {
+    const url = new URL(link);
+    const path = url.pathname.replace(/\/+$/, "");
+    if (path && path !== "") return 8;
+    if (url.search) return 4;
+    return -10;
+  } catch {
+    return -4;
+  }
 }
 
 function formationResourcePriority(resource: Resource) {

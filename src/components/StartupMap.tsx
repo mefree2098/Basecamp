@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Bookmark,
   BriefcaseBusiness,
-  Building2,
   Calendar,
   Camera,
   CheckCircle2,
@@ -13,10 +12,8 @@ import {
   Expand,
   ExternalLink,
   Flame,
-  GitCompare,
   Layers,
   Linkedin,
-  ListPlus,
   LocateFixed,
   MapPin,
   Minimize2,
@@ -29,11 +26,11 @@ import {
   Users,
   X
 } from "lucide-react";
-import { AnimatedAvatar } from "./AnimatedAvatar";
 import { projectUtahPoint } from "@/lib/geo";
 import type { Company } from "@/lib/types";
 
 type Facet = { label: string; count: number };
+type AppTheme = "classic" | "tech";
 type MapPosition = { lat: number; lng: number };
 type CompanyMapLocation = MapPosition & {
   confidence: Company["coordinates"]["confidence"] | "google";
@@ -138,7 +135,7 @@ type StartupOverlayInstance = GoogleOverlayView & {
 type StartupOverlayConstructor = new (
   item: MapOverlayItem,
   active: boolean,
-  onSelect: (slug: string) => void
+  onSelect: (item: MapOverlayItem) => void
 ) => StartupOverlayInstance;
 type MapOverlayItem = {
   id: string;
@@ -153,9 +150,15 @@ type CompanyIconView = {
   source?: string;
   fetchedAt?: string;
 };
+type GoogleMapStyle = {
+  featureType?: string;
+  elementType?: string;
+  stylers: Array<Record<string, string | number | boolean>>;
+};
 
 const bakedGoogleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
 const googleMapsMapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID?.trim() ?? "";
+const googleMapsTechMapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_TECH_MAP_ID?.trim() ?? "";
 const GEOCODE_CACHE_KEY = "basecamp.googleGeocodes.v1";
 const GOOGLE_MAPS_CALLBACK = "__basecampGoogleMapsReady";
 const UTAH_CENTER = { lat: 40.35, lng: -111.84 };
@@ -165,6 +168,33 @@ const UTAH_BOUNDS = {
   west: -114.15,
   east: -109.0
 };
+const TECH_GOOGLE_MAP_STYLES: GoogleMapStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#06101f" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#7fdcff" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#020712" }, { weight: 3 }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#265cc9" }, { lightness: -25 }] },
+  { featureType: "administrative.country", elementType: "labels.text.fill", stylers: [{ color: "#a6c9ff" }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d9efff" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#07162a" }] },
+  { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ color: "#081b35" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#04172c" }] },
+  { featureType: "landscape.natural.terrain", elementType: "geometry", stylers: [{ color: "#0a2341" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#05271f" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#172b68" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#34c9ff" }, { lightness: -35 }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9fc7ff" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#1b438d" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#2446b0" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#ff8b2c" }, { lightness: -10 }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#f9d59a" }] },
+  { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#0d2553" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#021936" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#40dbff" }] }
+];
 
 let googleMapsScriptPromise: Promise<void> | null = null;
 
@@ -193,7 +223,7 @@ export function StartupMap({
   const [employees, setEmployees] = useState(initialFilters.employees);
   const [location, setLocation] = useState(initialFilters.location);
   const [hiring, setHiring] = useState(initialFilters.hiring);
-  const [selectedSlug, setSelectedSlug] = useState(companies[0]?.slug ?? "");
+  const [selectedSlug, setSelectedSlug] = useState("");
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState(bakedGoogleMapsApiKey);
   const [mapStatus, setMapStatus] = useState(
     bakedGoogleMapsApiKey
@@ -205,12 +235,11 @@ export function StartupMap({
   const [mapMode, setMapMode] = useState<"roadmap" | "satellite">("roadmap");
   const [heatmap, setHeatmap] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [profileDrawerOpen, setProfileDrawerOpen] = useState(true);
+  const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
+  const [activeClusterId, setActiveClusterId] = useState("");
+  const [theme, setTheme] = useState<AppTheme>(() => readStoredTheme());
   const [savedSlugs, setSavedSlugs] = useState<string[]>(() =>
     readStoredStringArray("basecamp.savedCompanies")
-  );
-  const [compareSlugs, setCompareSlugs] = useState<string[]>(() =>
-    readStoredStringArray("basecamp.compareCompanies")
   );
   const [fallbackZoom, setFallbackZoom] = useState(1);
   const [companyIcons, setCompanyIcons] = useState(initialCompanyIcons);
@@ -254,13 +283,23 @@ export function StartupMap({
     });
   }, [companies, employees, hiring, location, q, sector, stage]);
 
-  const selected = filtered.find((company) => company.slug === selectedSlug) ?? filtered[0];
+  const selected = selectedSlug ? filtered.find((company) => company.slug === selectedSlug) ?? null : null;
   const selectedLocation = selected ? mapLocationForCompany(selected, geocodedLocations) : null;
   const filterKey = `${q}|${sector}|${stage}|${employees}|${location}|${hiring}`;
   const mapItems = useMemo(
     () => buildMapOverlayItems(filtered, geocodedLocations, companyIcons),
     [filtered, geocodedLocations, companyIcons]
   );
+  const selectedCluster =
+    activeClusterId && mapItems.find((item) => item.id === activeClusterId && item.count > 1);
+  const clusterCompanies = useMemo(
+    () =>
+      selectedCluster
+        ? filtered.filter((company) => selectedCluster.slugs.includes(company.slug))
+        : [],
+    [filtered, selectedCluster]
+  );
+  const resultCompanies = selectedCluster ? clusterCompanies : filtered;
   const geocodeCandidates = useMemo(
     () =>
       filtered
@@ -269,13 +308,7 @@ export function StartupMap({
         .slice(0, compact ? 30 : 60),
     [compact, filtered, initialGeocodedLocations]
   );
-  const exactLocationCount = filtered.filter(
-    (company) => mapLocationForCompany(company, geocodedLocations).confidence === "google"
-  ).length;
   const hiringNowCount = companies.filter((company) => company.hiringStatus === "hiring").length;
-  const verifiedProfileCount = companies.filter(
-    (company) => company.verificationStatus === "claimed"
-  ).length;
   const hiringOptions = [
     { label: "hiring", count: hiringNowCount },
     {
@@ -297,20 +330,33 @@ export function StartupMap({
   ].filter((filter): filter is { id: string; label: string; clear: () => void } =>
     Boolean(filter)
   );
-  const galleryItems = selected ? galleryForCompany(selected) : [];
-  const jobRows = selected ? jobsForCompany(selected) : [];
-  const selectedVerified =
-    selected?.verificationStatus === "claimed" || selectedLocation?.confidence === "google";
-  const topSectorChips = facets.sectors.slice(0, 8);
-  const savedCompanies = savedSlugs
-    .map((slug) => companies.find((company) => company.slug === slug))
-    .filter((company): company is Company => Boolean(company));
-  const compareCompanies = compareSlugs
-    .map((slug) => companies.find((company) => company.slug === slug))
-    .filter((company): company is Company => Boolean(company));
+  const selectedVerified = Boolean(
+    selected && (selected.verificationStatus === "claimed" || selectedLocation?.confidence === "google")
+  );
+  const topSectorChips = facets.sectors.slice(0, 5);
+  const visibleHiringCount = filtered.filter((company) => company.hiringStatus === "hiring").length;
+  const investorSummary = activeFilters.length
+    ? `${activeFilters.length} filter${activeFilters.length === 1 ? "" : "s"} active`
+    : `${(sector ? 1 : facets.sectors.length).toLocaleString()} sectors to explore`;
 
-  const selectCompany = useCallback((slug: string) => {
+  const selectCompany = useCallback((slug: string, options: { preserveCluster?: boolean } = {}) => {
+    if (!options.preserveCluster) setActiveClusterId("");
     setSelectedSlug(slug);
+    setProfileDrawerOpen(true);
+  }, []);
+
+  const selectMapItem = useCallback((item: MapOverlayItem) => {
+    if (item.count > 1) {
+      setActiveClusterId(item.id);
+      setSelectedSlug("");
+      setProfileDrawerOpen(false);
+      setMapStatus(
+        `${item.count.toLocaleString()} startups grouped near ${item.company.location || "this area"}.`
+      );
+      return;
+    }
+    setActiveClusterId("");
+    setSelectedSlug(item.company.slug);
     setProfileDrawerOpen(true);
   }, []);
 
@@ -321,6 +367,7 @@ export function StartupMap({
     setEmployees("");
     setLocation("");
     setHiring("");
+    setActiveClusterId("");
   }
 
   function saveCurrentCompany() {
@@ -331,18 +378,6 @@ export function StartupMap({
       return next;
     });
     setMapStatus(`${selected.name} saved to your investor list.`);
-  }
-
-  function toggleCompareCompany() {
-    if (!selected) return;
-    setCompareSlugs((current) => {
-      const exists = current.includes(selected.slug);
-      const next = exists
-        ? current.filter((slug) => slug !== selected.slug)
-        : [...current.slice(-2), selected.slug];
-      window.localStorage.setItem("basecamp.compareCompanies", JSON.stringify(next));
-      return next;
-    });
   }
 
   function exportFilteredCsv() {
@@ -369,12 +404,6 @@ export function StartupMap({
     URL.revokeObjectURL(url);
   }
 
-  function findPartnersNearSelected() {
-    if (!selected) return;
-    setLocation(selected.location || "");
-    setMapStatus(`Showing potential partners and customers near ${selected.location || selected.name}.`);
-  }
-
   useEffect(() => {
     const readMapsKey = () => {
       const override = window.localStorage.getItem("basecamp.googleMapsApiKey")?.trim();
@@ -386,6 +415,21 @@ export function StartupMap({
     return () => {
       window.removeEventListener("storage", readMapsKey);
       window.removeEventListener("basecamp-google-maps-settings", readMapsKey);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncTheme = () => setTheme(readStoredTheme());
+    const handleThemeChange = (event: Event) => {
+      const nextTheme = (event as CustomEvent<{ theme?: string }>).detail?.theme;
+      setTheme(nextTheme === "tech" ? "tech" : "classic");
+    };
+    syncTheme();
+    window.addEventListener("basecamp-theme-change", handleThemeChange);
+    window.addEventListener("storage", syncTheme);
+    return () => {
+      window.removeEventListener("basecamp-theme-change", handleThemeChange);
+      window.removeEventListener("storage", syncTheme);
     };
   }, []);
 
@@ -463,13 +507,15 @@ export function StartupMap({
         geocoderRef.current = new geocodingLibrary.Geocoder();
         streetViewServiceRef.current = new streetViewLibrary.StreetViewService();
 
+        const activeMapId = mapIdForTheme(theme);
         mapRef.current = new mapsLibrary.Map(mapElementRef.current, {
+          backgroundColor: theme === "tech" ? "#020814" : "#e6edf4",
           center: UTAH_CENTER,
           clickableIcons: false,
           disableDefaultUI: true,
           fullscreenControl: false,
           gestureHandling: "greedy",
-          mapId: googleMapsMapId || undefined,
+          mapId: activeMapId || undefined,
           mapTypeControl: false,
           mapTypeId: "roadmap",
           restriction: {
@@ -478,6 +524,7 @@ export function StartupMap({
           },
           scaleControl: true,
           streetViewControl: false,
+          styles: embeddedStylesForTheme(theme, activeMapId),
           zoom: compact ? 6 : 7,
           zoomControl: false
         });
@@ -494,7 +541,7 @@ export function StartupMap({
     return () => {
       cancelled = true;
     };
-  }, [compact, googleMapsApiKey]);
+  }, [compact, googleMapsApiKey, theme]);
 
   useEffect(() => {
     const overlays = overlaysRef.current;
@@ -518,17 +565,36 @@ export function StartupMap({
     });
 
     mapItems.forEach((item) => {
-      const active = Boolean(selected && item.slugs.includes(selected.slug));
+      const active = Boolean(
+        (selected && item.slugs.includes(selected.slug)) ||
+          (selectedCluster && item.id === selectedCluster.id)
+      );
       const existing = overlaysRef.current.get(item.id);
       if (existing) {
         existing.update(item, active);
         return;
       }
-      const overlay = new Overlay(item, active, selectCompany);
+      const overlay = new Overlay(item, active, selectMapItem);
       overlay.setMap(map);
       overlaysRef.current.set(item.id, overlay);
     });
-  }, [mapItems, mapReady, selectCompany, selected]);
+  }, [mapItems, mapReady, selectMapItem, selected, selectedCluster]);
+
+  useEffect(() => {
+    if (!activeClusterId || selectedCluster) return;
+    const timeout = window.setTimeout(() => setActiveClusterId(""), 0);
+    return () => window.clearTimeout(timeout);
+  }, [activeClusterId, selectedCluster]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    const activeMapId = mapIdForTheme(theme);
+    mapRef.current.setOptions({
+      backgroundColor: theme === "tech" ? "#020814" : "#e6edf4",
+      mapId: activeMapId || undefined,
+      styles: embeddedStylesForTheme(theme, activeMapId)
+    });
+  }, [mapReady, theme]);
 
   useEffect(() => {
     const Bounds = boundsRef.current;
@@ -674,24 +740,35 @@ export function StartupMap({
     }
   }
 
+  const consoleClassName = [
+    "map-section",
+    "startup-map-console",
+    compact ? "startup-map-console--compact" : "",
+    focusMode ? "startup-map-console--focus" : "",
+    selected && profileDrawerOpen ? "startup-map-console--drawer-open" : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const showMapStatus = Boolean(
+    streetViewStatus ||
+      !googleMapsApiKey ||
+      /saved|unable|failed|error|no street|add next_public/i.test(mapStatus)
+  );
+
   return (
-    <section
-      className={
-        compact
-          ? `map-section startup-map-console startup-map-console--compact${focusMode ? " startup-map-console--focus" : ""}`
-          : `map-section startup-map-console${focusMode ? " startup-map-console--focus" : ""}`
-      }
-    >
+    <section className={consoleClassName}>
       <aside className="map-filter-card" aria-label="Startup map filters">
         <div className="map-filter-card__header">
           <div>
-            <p>Startup State</p>
-            <h1>Explore Utah Startups</h1>
+            <p>Investor Map</p>
+            <h1>Where Utah is building</h1>
           </div>
-          <button type="button" onClick={resetFilters}>
-            <RefreshCw size={14} aria-hidden="true" />
-            Reset all
-          </button>
+          {activeFilters.length > 0 && (
+            <button type="button" onClick={resetFilters}>
+              <RefreshCw size={14} aria-hidden="true" />
+              Reset
+            </button>
+          )}
         </div>
 
         <label className="search-field map-filter-search">
@@ -699,11 +776,18 @@ export function StartupMap({
           <input
             value={q}
             onChange={(event) => setQ(event.target.value)}
-            placeholder="Search companies, sectors, cities"
+            placeholder="Search startups or cities"
           />
         </label>
 
         <div className="sector-chip-row" aria-label="Quick sector filters">
+          <button
+            type="button"
+            className={hiring === "hiring" ? "active" : undefined}
+            onClick={() => setHiring((value) => (value === "hiring" ? "" : "hiring"))}
+          >
+            Hiring now
+          </button>
           {topSectorChips.map((chip) => (
             <button
               key={chip.label}
@@ -716,135 +800,122 @@ export function StartupMap({
           ))}
         </div>
 
-        <div className="map-filter-stack">
-          <MapSelect label="Sector" value={sector} onChange={setSector} options={facets.sectors} />
-          <MapSelect
-            label="Size"
-            value={employees}
-            onChange={setEmployees}
-            options={facets.employeeBands}
-          />
-          <MapSelect
-            label="Stage"
-            value={stage}
-            onChange={setStage}
-            options={facets.companyStages}
-          />
-          <MapSelect
-            label="Hiring Status"
-            value={hiring}
-            onChange={setHiring}
-            options={hiringOptions}
-          />
-          <MapSelect
-            label="Location"
-            value={location}
-            onChange={setLocation}
-            options={facets.companyLocations}
-          />
-        </div>
+        <details className="map-advanced-filters">
+          <summary>
+            <span>More filters</span>
+            <ChevronRight size={14} aria-hidden="true" />
+          </summary>
+          <div className="map-filter-stack">
+            <MapSelect label="Sector" value={sector} onChange={setSector} options={facets.sectors} />
+            <MapSelect
+              label="Size"
+              value={employees}
+              onChange={setEmployees}
+              options={facets.employeeBands}
+            />
+            <MapSelect
+              label="Stage"
+              value={stage}
+              onChange={setStage}
+              options={facets.companyStages}
+            />
+            <MapSelect
+              label="Hiring Status"
+              value={hiring}
+              onChange={setHiring}
+              options={hiringOptions}
+            />
+            <MapSelect
+              label="Location"
+              value={location}
+              onChange={setLocation}
+              options={facets.companyLocations}
+            />
+          </div>
+        </details>
 
-        <div className="active-filter-panel">
-          <span>Active filters</span>
-          <div className="active-filter-chips">
-            {activeFilters.length > 0 ? (
-              activeFilters.map((filter) => (
+        {activeFilters.length > 0 && (
+          <div className="active-filter-panel">
+            <span>Active filters</span>
+            <div className="active-filter-chips">
+              {activeFilters.map((filter) => (
                 <button key={filter.id} type="button" onClick={filter.clear}>
                   {filter.label}
                   <X size={12} aria-hidden="true" />
                 </button>
-              ))
-            ) : (
-              <small>No filters applied</small>
-            )}
+              ))}
+            </div>
           </div>
+        )}
+
+        <div className="map-investor-snapshot" aria-label="Current opportunity view">
+          <strong>{filtered.length.toLocaleString()}</strong>
+          <span>startups in view</span>
+          <small>
+            {visibleHiringCount.toLocaleString()} hiring · {investorSummary}
+          </small>
         </div>
 
         <div className="map-results-drawer" aria-label="Search results">
           <div className="drawer-section__heading">
-            <h3>{filtered.length.toLocaleString()} results</h3>
-            <button type="button" onClick={exportFilteredCsv}>
-              Export CSV
-            </button>
+            <div>
+              <h3>{selectedCluster ? "Cluster" : "Explore"}</h3>
+              <span className="map-results-meta">
+                {selectedCluster
+                  ? `${resultCompanies.length.toLocaleString()} startups near ${selectedCluster.company.location || "this area"}`
+                  : `${resultCompanies.length.toLocaleString()} startups in this view`}
+              </span>
+            </div>
+            <div className="map-drawer-actions">
+              {selectedCluster && (
+                <button type="button" onClick={() => setActiveClusterId("")}>
+                  All results
+                </button>
+              )}
+              <button type="button" onClick={exportFilteredCsv}>CSV</button>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = Array.from(
+                    new Set([...savedSlugs, ...resultCompanies.map((company) => company.slug)])
+                  );
+                  setSavedSlugs(next);
+                  window.localStorage.setItem("basecamp.savedCompanies", JSON.stringify(next));
+                  setMapStatus(`${next.length} companies saved in this browser.`);
+                }}
+              >
+                <Bookmark size={13} aria-hidden="true" />
+                Save
+              </button>
+            </div>
           </div>
-          {filtered.slice(0, 9).map((company) => (
-            <button
-              key={company.slug}
-              type="button"
-              className={company.slug === selected?.slug ? "map-result active" : "map-result"}
-              onClick={() => selectCompany(company.slug)}
-            >
-              <span>{company.name}</span>
-              <small>
-                {company.location || "Utah"} · {company.sector || "Uncategorized"}
-              </small>
-            </button>
-          ))}
-        </div>
-
-        <div className="map-filter-card__footer">
-          <button
-            type="button"
-            className="ghost-button map-save-search"
-            onClick={() => {
-              const next = Array.from(
-                new Set([...savedSlugs, ...filtered.slice(0, 25).map((company) => company.slug)])
-              );
-              setSavedSlugs(next);
-              window.localStorage.setItem("basecamp.savedCompanies", JSON.stringify(next));
-              setMapStatus(`${next.length} companies saved in this browser.`);
-            }}
-          >
-            <Bookmark size={16} aria-hidden="true" />
-            Save Search
-          </button>
+          <div className="map-results-list">
+            {resultCompanies.length > 0 ? (
+              resultCompanies.map((company) => (
+                <button
+                  key={company.slug}
+                  type="button"
+                  className={company.slug === selectedSlug ? "map-result active" : "map-result"}
+                  onClick={() =>
+                    selectCompany(company.slug, { preserveCluster: Boolean(selectedCluster) })
+                  }
+                >
+                  <span>{company.name}</span>
+                  <small>
+                    {[company.location || "Utah", company.sector || "Uncategorized", company.employees]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </small>
+                </button>
+              ))
+            ) : (
+              <p className="map-results-empty">No companies match these filters.</p>
+            )}
+          </div>
         </div>
       </aside>
 
       <div className="map-main-panel">
-        <div className="map-kpi-grid" aria-label="Utah startup map statistics">
-          <article className="map-kpi-card">
-            <span className="map-kpi-card__icon map-kpi-card__icon--orange">
-              <Building2 size={22} aria-hidden="true" />
-            </span>
-            <div>
-              <span>Total Startups</span>
-              <strong>{companies.length.toLocaleString()}</strong>
-              <small>{filtered.length.toLocaleString()} in current view</small>
-            </div>
-          </article>
-          <article className="map-kpi-card">
-            <span className="map-kpi-card__icon map-kpi-card__icon--green">
-              <Users size={22} aria-hidden="true" />
-            </span>
-            <div>
-              <span>Hiring Now</span>
-              <strong>{hiringNowCount.toLocaleString()}</strong>
-              <small>public hiring signals</small>
-            </div>
-          </article>
-          <article className="map-kpi-card">
-            <span className="map-kpi-card__icon map-kpi-card__icon--purple">
-              <Layers size={22} aria-hidden="true" />
-            </span>
-            <div>
-              <span>Sectors</span>
-              <strong>{facets.sectors.length.toLocaleString()}</strong>
-              <small>filterable categories</small>
-            </div>
-          </article>
-          <article className="map-kpi-card">
-            <span className="map-kpi-card__icon map-kpi-card__icon--blue">
-              <ShieldCheck size={22} aria-hidden="true" />
-            </span>
-            <div>
-              <span>Verified Profiles</span>
-              <strong>{verifiedProfileCount.toLocaleString()}</strong>
-              <small>{exactLocationCount.toLocaleString()} exact Google addresses</small>
-            </div>
-          </article>
-        </div>
-
         <div
           className={heatmap ? "map-stage map-stage--console heatmap-on" : "map-stage map-stage--console"}
           aria-label="Utah startup ecosystem map"
@@ -861,6 +932,12 @@ export function StartupMap({
               onSelect={selectCompany}
             />
           )}
+
+          <div className="map-investor-pill" aria-label="Visible startup count">
+            <strong>{filtered.length.toLocaleString()}</strong>
+            <span>Utah startups</span>
+            <small>{visibleHiringCount.toLocaleString()} hiring now</small>
+          </div>
 
           <div className="map-control-stack" aria-label="Map zoom controls">
             <button type="button" onClick={() => zoomBy(1)} aria-label="Zoom in">
@@ -881,35 +958,41 @@ export function StartupMap({
             </button>
           </div>
 
-          <div className="map-mode-stack">
-            <button
-              type="button"
-              className={heatmap ? "map-toggle-control active" : "map-toggle-control"}
-              onClick={() => setHeatmap((value) => !value)}
-            >
-              <Flame size={17} aria-hidden="true" />
-              Heatmap
-              <span aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="map-icon-control"
-              onClick={() => setMapMode((mode) => (mode === "roadmap" ? "satellite" : "roadmap"))}
-              aria-label={mapMode === "roadmap" ? "Switch to satellite map" : "Switch to road map"}
-            >
-              <Satellite size={17} aria-hidden="true" />
-              {mapMode === "roadmap" ? "Satellite" : "Roadmap"}
-            </button>
-            <button
-              type="button"
-              className="map-icon-control"
-              onClick={openStreetView}
-              disabled={!mapReady || !selected || selectedLocation?.confidence !== "google"}
-            >
-              <Camera size={17} aria-hidden="true" />
-              Street View
-            </button>
-          </div>
+          <details className="map-view-menu">
+            <summary>
+              <Layers size={16} aria-hidden="true" />
+              View
+            </summary>
+            <div>
+              <button
+                type="button"
+                className={heatmap ? "map-toggle-control active" : "map-toggle-control"}
+                onClick={() => setHeatmap((value) => !value)}
+              >
+                <Flame size={17} aria-hidden="true" />
+                Heatmap
+                <span aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="map-icon-control"
+                onClick={() => setMapMode((mode) => (mode === "roadmap" ? "satellite" : "roadmap"))}
+                aria-label={mapMode === "roadmap" ? "Switch to satellite map" : "Switch to road map"}
+              >
+                <Satellite size={17} aria-hidden="true" />
+                {mapMode === "roadmap" ? "Satellite" : "Roadmap"}
+              </button>
+              <button
+                type="button"
+                className="map-icon-control"
+                onClick={openStreetView}
+                disabled={!mapReady || !selected || selectedLocation?.confidence !== "google"}
+              >
+                <Camera size={17} aria-hidden="true" />
+                Street View
+              </button>
+            </div>
+          </details>
 
           {selected && (
             <button
@@ -933,23 +1016,17 @@ export function StartupMap({
             </button>
           )}
 
-          <div className="map-guide-toast">
-            <AnimatedAvatar compact state="ready" />
-            <div>
-              <strong>Hey founder!</strong>
-              <span>Explore the ecosystem and discover opportunities.</span>
+          {showMapStatus && (
+            <div className="map-status-badge">
+              <LocateFixed size={15} aria-hidden="true" />
+              {streetViewStatus || mapStatus}
             </div>
-          </div>
-
-          <div className="map-status-badge">
-            <LocateFixed size={15} aria-hidden="true" />
-            {streetViewStatus || mapStatus}
-          </div>
+          )}
         </div>
       </div>
 
-      <aside className="map-company-drawer" aria-label="Selected company profile">
-        {selected && profileDrawerOpen ? (
+      {selected && profileDrawerOpen && (
+        <aside className="map-company-drawer" aria-label="Selected company profile">
           <article>
             <div className="company-drawer__header">
               <CompanyLogo company={selected} iconUrl={companyIcons[selected.slug]?.url} />
@@ -980,14 +1057,7 @@ export function StartupMap({
               </button>
             </div>
 
-            <dl className="company-quick-facts">
-              <div>
-                <dt>
-                  <Users size={15} aria-hidden="true" />
-                  Employees
-                </dt>
-                <dd>{selected.employees || "Unknown"}</dd>
-              </div>
+            <dl className="company-quick-facts company-quick-facts--compact">
               <div>
                 <dt>
                   <BriefcaseBusiness size={15} aria-hidden="true" />
@@ -997,10 +1067,40 @@ export function StartupMap({
               </div>
               <div>
                 <dt>
-                  <Calendar size={15} aria-hidden="true" />
-                  Year Founded
+                  <Users size={15} aria-hidden="true" />
+                  Employees
                 </dt>
-                <dd>{selected.foundedYear || "Add during claim"}</dd>
+                <dd>{selected.employees || "Unknown"}</dd>
+              </div>
+              <div>
+                <dt>
+                  <Calendar size={15} aria-hidden="true" />
+                  Founded
+                </dt>
+                <dd>{selected.foundedYear || "Unknown"}</dd>
+              </div>
+            </dl>
+
+            <section className="drawer-section drawer-section--summary">
+              <h3>Investor Snapshot</h3>
+              <p>{selected.description}</p>
+            </section>
+
+            <dl className="company-profile-strip company-profile-strip--simple">
+              <div>
+                <dt>
+                  <MapPin size={15} aria-hidden="true" />
+                  Location
+                </dt>
+                <dd>{selected.location || selectedLocation?.formattedAddress || "Utah"}</dd>
+              </div>
+              <div>
+                <dt>Hiring</dt>
+                <dd>
+                  <span className={selected.hiringStatus === "hiring" ? "status-pill hiring" : "status-pill"}>
+                    {formatHiringStatus(selected.hiringStatus)}
+                  </span>
+                </dd>
               </div>
               <div>
                 <dt>
@@ -1019,146 +1119,23 @@ export function StartupMap({
               </div>
             </dl>
 
-            <section className="drawer-section">
-              <h3>Description</h3>
-              <p>{selected.description}</p>
-            </section>
-
-            <dl className="company-profile-strip">
-              <div>
-                <dt>
-                  <MapPin size={15} aria-hidden="true" />
-                  Address
-                </dt>
-                <dd>{selectedLocation?.formattedAddress ?? selected.address ?? "Utah"}</dd>
-              </div>
-              <div>
-                <dt>Hiring Status</dt>
-                <dd>
-                  <span className={selected.hiringStatus === "hiring" ? "status-pill hiring" : "status-pill"}>
-                    {formatHiringStatus(selected.hiringStatus)}
-                  </span>
-                </dd>
-              </div>
-              <div>
-                <dt>Job Postings</dt>
-                <dd>
-                  {selected.jobsUrl ? (
-                    <Link href={selected.jobsUrl} target="_blank">
-                      Careers page
-                      <ChevronRight size={15} aria-hidden="true" />
-                    </Link>
-                  ) : (
-                    "Add during claim"
-                  )}
-                </dd>
-              </div>
-            </dl>
-
-            {galleryItems.length > 0 && (
-              <section className="drawer-section">
-                <div className="drawer-section__heading">
-                  <h3>Photo Gallery</h3>
-                  <button type="button">View all ({galleryItems.length})</button>
-                </div>
-                <div className="company-gallery-grid">
-                  {galleryItems.slice(0, 4).map((item, index) => (
-                    <div
-                      key={`${item.label}-${index}`}
-                      className="company-gallery-tile"
-                      style={item.url ? { backgroundImage: `linear-gradient(180deg, transparent, rgba(8, 21, 40, 0.72)), url("${item.url}")` } : undefined}
-                    >
-                      <span>{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {(jobRows.length > 0 || selected.jobsUrl) && (
-              <section className="drawer-section">
-                <div className="drawer-section__heading">
-                  <h3>Open Positions</h3>
-                  {selected.jobsUrl && (
-                    <Link href={selected.jobsUrl} target="_blank">
-                      View all jobs
-                    </Link>
-                  )}
-                </div>
-                <div className="company-jobs-list">
-                  {jobRows.length > 0 ? (
-                  jobRows.map((job) => (
-                    <Link key={job.title} href={job.url ?? selected.jobsUrl ?? `/companies/${selected.slug}`}>
-                      <strong>{job.title}</strong>
-                      <span>
-                        {job.location || selected.location || "Utah"} · {job.type || "Role"}
-                      </span>
-                      <em>New</em>
-                      <ChevronRight size={15} aria-hidden="true" />
-                    </Link>
-                  ))
-                  ) : (
-                    <Link href={selected.jobsUrl ?? `/companies/${selected.slug}`} target="_blank">
-                      <strong>Careers page</strong>
-                      <span>{selected.location || "Utah"}</span>
-                      <em>Open</em>
-                      <ChevronRight size={15} aria-hidden="true" />
-                    </Link>
-                  )}
-                </div>
-              </section>
-            )}
-
             <div className="company-drawer-actions">
               <button type="button" className="ghost-button" onClick={saveCurrentCompany}>
-                <ListPlus size={16} aria-hidden="true" />
+                <Bookmark size={16} aria-hidden="true" />
                 Save
-              </button>
-              <button type="button" className="ghost-button" onClick={toggleCompareCompany}>
-                <GitCompare size={16} aria-hidden="true" />
-                Compare
               </button>
               <Link className="ghost-button" href={`/submit-company?company=${selected.slug}`}>
                 <ShieldCheck size={16} aria-hidden="true" />
                 Claim Profile
-              </Link>
-              <Link className="ghost-button" href={`/submit-company?company=${selected.slug}`}>
-                <ExternalLink size={16} aria-hidden="true" />
-                Update Company
               </Link>
               <Link className="primary-button" href={`/companies/${selected.slug}`}>
                 View Full Profile
                 <ChevronRight size={16} aria-hidden="true" />
               </Link>
             </div>
-
-            <section className="drawer-section discovery-tools">
-              <div className="drawer-section__heading">
-                <h3>Discovery Tools</h3>
-                <button type="button" onClick={findPartnersNearSelected}>
-                  Find nearby partners
-                </button>
-              </div>
-              <div className="discovery-grid">
-                <div>
-                  <strong>Saved list</strong>
-                  <span>{savedCompanies.length} companies</span>
-                </div>
-                <div>
-                  <strong>Compare</strong>
-                  <span>{compareCompanies.map((company) => company.name).join(" vs ") || "Pick up to 3"}</span>
-                </div>
-              </div>
-            </section>
           </article>
-        ) : (
-          <div className="map-company-drawer__empty">
-            <MapPin size={22} aria-hidden="true" />
-            <h2>Select a startup</h2>
-            <p>Choose a marker or result to inspect its profile, jobs, gallery, and verification state.</p>
-          </div>
-        )}
-      </aside>
+        </aside>
+      )}
     </section>
   );
 }
@@ -1266,12 +1243,12 @@ function createStartupOverlayClass(
     private item: MapOverlayItem;
     private active: boolean;
     private button: HTMLButtonElement | null = null;
-    private readonly onSelect: (slug: string) => void;
+    private readonly onSelect: (item: MapOverlayItem) => void;
 
     constructor(
       item: MapOverlayItem,
       active: boolean,
-      onSelect: (slug: string) => void
+      onSelect: (item: MapOverlayItem) => void
     ) {
       super();
       this.item = item;
@@ -1303,6 +1280,7 @@ function createStartupOverlayClass(
       this.button.style.display = "grid";
       this.button.style.left = `${point.x}px`;
       this.button.style.top = `${point.y}px`;
+      this.button.style.zIndex = markerZIndex(this.item, this.active);
     }
 
     onRemove() {
@@ -1324,7 +1302,7 @@ function createStartupOverlayClass(
     }
 
     private readonly handleClick = () => {
-      this.onSelect(this.item.company.slug);
+      this.onSelect(this.item);
     };
   }
 
@@ -1344,8 +1322,14 @@ function markerClassName(item: MapOverlayItem, active: boolean) {
 }
 
 function markerLabel(item: MapOverlayItem) {
-  if (item.count > 1) return `${item.count} startups near ${item.company.location || "Utah"}`;
+  if (item.count > 1) return `Open cluster of ${item.count} startups near ${item.company.location || "Utah"}`;
   return `Select ${item.company.name}`;
+}
+
+function markerZIndex(item: MapOverlayItem, active: boolean) {
+  if (active) return "90";
+  if (item.count > 1) return String(20 + Math.min(item.count, 60));
+  return item.position.confidence === "google" ? "8" : "4";
 }
 
 function initialsForCompany(name: string) {
@@ -1509,23 +1493,22 @@ function formatLinkedInPath(value: string) {
   }
 }
 
-function galleryForCompany(company: Company) {
-  if (company.gallery.length > 0) {
-    return company.gallery.map((photo, index) => {
-      if (!photo) return { label: `Gallery ${index + 1}`, url: "" };
-      try {
-        const url = new URL(photo);
-        return { label: url.hostname.replace(/^www\./, ""), url: photo };
-      } catch {
-        return { label: photo, url: "" };
-      }
-    });
-  }
-  return [];
+function mapIdForTheme(theme: AppTheme) {
+  return theme === "tech" ? googleMapsTechMapId : googleMapsMapId;
 }
 
-function jobsForCompany(company: Company) {
-  return company.jobPostings ?? [];
+function embeddedStylesForTheme(theme: AppTheme, mapId: string) {
+  return theme === "tech" && !mapId ? TECH_GOOGLE_MAP_STYLES : undefined;
+}
+
+function readStoredTheme(): AppTheme {
+  if (typeof window === "undefined") {
+    return "classic";
+  }
+  return window.localStorage.getItem("basecamp.theme") === "tech" ||
+    document.documentElement.dataset.theme === "tech"
+    ? "tech"
+    : "classic";
 }
 
 function readInitialMapFilters() {

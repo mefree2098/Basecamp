@@ -19,7 +19,7 @@ const profileSchema = z.object({
   county: z.string(),
   community: z.string(),
   goal: z.string(),
-  mode: z.enum(["guided", "manual"])
+  mode: z.enum(["chat", "guided", "manual"])
 });
 
 const saveTurnSchema = z.object({

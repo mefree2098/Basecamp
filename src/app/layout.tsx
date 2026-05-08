@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   title: "Basecamp | Startup State",
   description: "Founder navigator, resource explorer, and startup map for Utah's Startup State.",
   icons: {
-    icon: "/brand/basecamp-app-icon.png",
-    apple: "/brand/basecamp-app-icon.png"
+    icon: "/brand/startup-state-mark.svg",
+    apple: "/brand/startup-state-mark.svg"
   }
 };
 

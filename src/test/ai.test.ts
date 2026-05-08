@@ -18,12 +18,13 @@ describe("AI model catalog", () => {
 
 describe("Basecamp guide prompt", () => {
   it("keeps the founder response grounded, concise, and action-oriented", () => {
-    expect(BASECAMP_SYSTEM_PROMPT).toContain("reduce overwhelm");
-    expect(BASECAMP_SYSTEM_PROMPT).toContain("clear first stop");
-    expect(BASECAMP_SYSTEM_PROMPT).toContain("formation order");
+    expect(BASECAMP_SYSTEM_PROMPT).toContain("state-assigned concierge");
+    expect(BASECAMP_SYSTEM_PROMPT).toContain("Plan-first protocol");
+    expect(BASECAMP_SYSTEM_PROMPT).toContain("Done, Active, Queued, or Blocked");
     expect(BASECAMP_SYSTEM_PROMPT).toContain("direct action links");
+    expect(BASECAMP_SYSTEM_PROMPT).toContain("direct page URL");
     expect(BASECAMP_SYSTEM_PROMPT).toContain("Do not invent");
-    expect(BASECAMP_SYSTEM_PROMPT).toContain("under 180 words");
+    expect(BASECAMP_SYSTEM_PROMPT).toContain("initial plan turns");
   });
 
   it("injects cited candidate resources into the grounded context", () => {
@@ -59,6 +60,7 @@ describe("Basecamp guide prompt", () => {
     const context = buildGroundedContext(profile, profile.goal, recommendations);
 
     expect(context).toContain("Founder Mentor Desk [resource:mentor]");
+    expect(context).toContain("Direct page: https://example.com");
     expect(context).toContain("Return the founder-facing answer only.");
   });
 
@@ -144,7 +146,9 @@ describe("Basecamp guide prompt", () => {
       resources
     });
 
-    expect(response.assistantMessage).toContain("formation belongs in the first path");
+    expect(response.assistantMessage).toContain("working startup plan");
+    expect(response.assistantMessage).toContain("Active:");
+    expect(response.assistantMessage).toContain("Queued:");
     expect(response.assistantMessage).toContain("EIN");
     expect(response.assistantMessage).toContain("business bank account");
     expect(response.assistantMessage).not.toContain("Apple Developer");

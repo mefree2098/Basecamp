@@ -5,9 +5,9 @@ export function BrandMark() {
   return (
     <Link className="brand-mark" href="/" aria-label="Startup State home">
       <Image
-        src="/brand/basecamp-app-icon.png"
+        src="/brand/startup-state-mark.svg"
         alt=""
-        width={44}
+        width={50}
         height={44}
         className="brand-mark__icon"
         priority

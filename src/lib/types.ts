@@ -12,7 +12,7 @@ export type FounderProfile = {
   county: string;
   community: string;
   goal: string;
-  mode: "guided" | "manual";
+  mode: "chat" | "guided" | "manual";
 };
 
 export type Resource = {
@@ -72,6 +72,78 @@ export type Recommendation = {
   citations: string[];
 };
 
+export type Facet = { label: string; count: number };
+
+export type PlatformFacets = {
+  stages: Facet[];
+  topics: Facet[];
+  counties: Facet[];
+  industries: Facet[];
+  communities: Facet[];
+  sectors: Facet[];
+  companyStages: Facet[];
+  employeeBands: Facet[];
+  companyLocations: Facet[];
+};
+
+export type PageInfo = {
+  totalApprox: number;
+  hasNextPage: boolean;
+  cursor: string | null;
+};
+
+export type ResourceListResponse = {
+  items: Resource[];
+  facets: PlatformFacets;
+  page: PageInfo;
+};
+
+export type CompanyListResponse = {
+  items: Company[];
+  facets: PlatformFacets;
+  page: PageInfo;
+};
+
+export type CompanyMapLocation = {
+  lat: number;
+  lng: number;
+  confidence: Company["coordinates"]["confidence"] | "google";
+  formattedAddress?: string;
+};
+
+export type CompanyIconView = {
+  url: string;
+  source?: string;
+  fetchedAt?: string;
+};
+
+export type PlatformBootstrapResponse = {
+  resources: Resource[];
+  facets: PlatformFacets;
+  founderOptions: {
+    industries: string[];
+    counties: string[];
+    communities: string[];
+  };
+};
+
+export type MapBootstrapResponse = {
+  companies: Company[];
+  facets: PlatformFacets;
+  geocodedLocations: Record<string, CompanyMapLocation>;
+  companyIcons: Record<string, CompanyIconView>;
+};
+
+export type CompanyProfileResponse = {
+  company: Company;
+  companyIcon?: CompanyIconView;
+};
+
+export type RecommendationResponse = {
+  recommendations: Recommendation[];
+  planCards: PlanCard[];
+};
+
 export type PlanCard = {
   title: string;
   dueWindow: "today" | "7_days" | "30_days" | "90_days";
@@ -120,6 +192,36 @@ export type FounderSession = {
   completedSteps: string[];
   planCards: PlanCard[];
   turns: SessionTurn[];
+};
+
+export type CompanyDraftSummary = {
+  id: string;
+  status: string;
+  verificationStatus: string;
+  submittedAt: string;
+  emailDeliveryStatus: string;
+  domainMatch?: {
+    ok: boolean;
+    reason: string;
+    emailDomain?: string;
+    websiteDomain?: string;
+  };
+  changes?: Array<{
+    field: string;
+    before: string;
+    after: string;
+  }>;
+  payload?: {
+    name: string;
+    workEmail?: string;
+  };
+};
+
+export type AdminSummaryResponse = {
+  resourceCount: number;
+  companyCount: number;
+  needsReview: number;
+  drafts: CompanyDraftSummary[];
 };
 
 export type SessionContext = {

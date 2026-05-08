@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Bot,
@@ -12,84 +12,61 @@ import {
   Upload,
   X
 } from "lucide-react";
+import { fetchJson } from "@/lib/apiClient";
+import type { AdminSummaryResponse, CompanyDraftSummary } from "@/lib/types";
 
-type DraftChange = {
-  field: string;
-  before: string;
-  after: string;
-};
-
-type CompanyDraftSummary = {
-  id: string;
-  status: string;
-  verificationStatus: string;
-  submittedAt: string;
-  emailDeliveryStatus: string;
-  domainMatch?: {
-    ok: boolean;
-    reason: string;
-    emailDomain?: string;
-    websiteDomain?: string;
-  };
-  changes?: DraftChange[];
-  payload?: {
-    name: string;
-    workEmail?: string;
-  };
-};
-
-export function AdminConsole({
-  resourceCount,
-  companyCount,
-  needsReview,
-  initialDrafts
-}: {
-  resourceCount: number;
-  companyCount: number;
-  needsReview: number;
-  initialDrafts: CompanyDraftSummary[];
-}) {
+export function AdminConsole() {
   const [kind, setKind] = useState<"resources" | "companies">("resources");
   const [csv, setCsv] = useState("");
   const [status, setStatus] = useState("");
-  const [drafts, setDrafts] = useState<CompanyDraftSummary[]>(initialDrafts);
+  const [resourceCount, setResourceCount] = useState(0);
+  const [companyCount, setCompanyCount] = useState(0);
+  const [needsReview, setNeedsReview] = useState(0);
+  const [drafts, setDrafts] = useState<CompanyDraftSummary[]>([]);
   const [draftStatus, setDraftStatus] = useState("");
 
-  async function loadDrafts() {
-    const response = await fetch("/api/company-drafts");
-    const result = (await response.json()) as { drafts?: CompanyDraftSummary[]; error?: string };
-    if (result.error) {
-      setDraftStatus(result.error);
-      return;
-    }
-    setDrafts(result.drafts ?? []);
-  }
+  const loadSummary = useCallback(async () => {
+    const result = await fetchJson<AdminSummaryResponse>("/api/admin/summary");
+    setResourceCount(result.resourceCount);
+    setCompanyCount(result.companyCount);
+    setNeedsReview(result.needsReview);
+    setDrafts(result.drafts);
+  }, []);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void loadSummary().catch(() =>
+        setDraftStatus("Could not load admin summary from the platform API.")
+      );
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [loadSummary]);
 
   async function importCsv() {
     setStatus("Importing...");
-    const response = await fetch("/api/admin/imports", {
+    const result: { count?: number; error?: string } = await fetchJson<{
+      count?: number;
+      error?: string;
+    }>("/api/admin/imports", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kind, csv })
-    });
-    const result = (await response.json()) as { count?: number; error?: string };
+    }).catch((error) => ({ error: error instanceof Error ? error.message : "Import failed." }));
     setStatus(result.error ? result.error : `Imported ${result.count ?? 0} ${kind}.`);
+    if (!result.error) void loadSummary();
   }
 
   async function reviewDraft(id: string, action: "approve" | "reject") {
     setDraftStatus(`${action === "approve" ? "Approving" : "Rejecting"} draft...`);
-    const response = await fetch("/api/company-drafts", {
+    const result = await fetchJson<{ error?: string }>("/api/company-drafts", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action })
-    });
-    const result = (await response.json()) as { error?: string };
+    }).catch((error) => ({ error: error instanceof Error ? error.message : "Draft review failed." }));
     if (result.error) {
       setDraftStatus(result.error);
       return;
     }
     setDraftStatus(action === "approve" ? "Draft approved and published." : "Draft rejected.");
-    await loadDrafts();
+    await loadSummary();
   }
 
   return (

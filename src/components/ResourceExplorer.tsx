@@ -1,25 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Bookmark, Filter, Search, SlidersHorizontal } from "lucide-react";
-import type { Resource } from "@/lib/types";
-
-type Facet = { label: string; count: number };
+import { fetchJson } from "@/lib/apiClient";
+import type { Facet, Resource, ResourceListResponse } from "@/lib/types";
 
 export function ResourceExplorer({
-  resources,
-  facets,
   compact = false
 }: {
-  resources: Resource[];
-  facets: {
-    stages: Facet[];
-    topics: Facet[];
-    counties: Facet[];
-    industries: Facet[];
-    communities: Facet[];
-  };
   compact?: boolean;
 }) {
   const [q, setQ] = useState("");
@@ -27,30 +16,43 @@ export function ResourceExplorer({
   const [topic, setTopic] = useState("");
   const [county, setCounty] = useState("");
   const [industry, setIndustry] = useState("");
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [facets, setFacets] = useState<ResourceListResponse["facets"]>(emptyFacets);
+  const [totalApprox, setTotalApprox] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("Loading resources...");
 
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return resources
-      .filter((resource) => {
-        const haystack = [
-          resource.title,
-          resource.description,
-          ...resource.topics,
-          ...resource.locations,
-          ...resource.industries
-        ]
-          .join(" ")
-          .toLowerCase();
-        return (
-          (!needle || haystack.includes(needle)) &&
-          (!stage || resource.stages.includes(stage as Resource["stages"][number])) &&
-          (!topic || resource.topics.includes(topic)) &&
-          (!county || resource.locations.includes(county)) &&
-          (!industry || resource.industries.includes(industry))
-        );
-      })
-      .slice(0, compact ? 6 : 48);
-  }, [county, industry, q, resources, stage, topic, compact]);
+  useEffect(() => {
+    let active = true;
+    const timeout = window.setTimeout(() => {
+      const params = new URLSearchParams({ limit: String(compact ? 6 : 48) });
+      if (q.trim()) params.set("q", q.trim());
+      if (stage) params.set("stage", stage);
+      if (topic) params.set("topic", topic);
+      if (county) params.set("county", county);
+      if (industry) params.set("industry", industry);
+      setLoading(true);
+      fetchJson<ResourceListResponse>(`/api/resources?${params.toString()}`)
+        .then((data) => {
+          if (!active) return;
+          setResources(data.items);
+          setFacets(data.facets);
+          setTotalApprox(data.page.totalApprox);
+          setStatus("");
+        })
+        .catch(() => {
+          if (active) setStatus("Basecamp could not load resources from the platform API.");
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    }, 180);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [compact, county, industry, q, stage, topic]);
 
   return (
     <section className={compact ? "resource-explorer compact" : "resource-explorer"}>
@@ -89,11 +91,11 @@ export function ResourceExplorer({
 
       <div className="result-meta">
         <SlidersHorizontal size={16} aria-hidden="true" />
-        {filtered.length} matching resources from {resources.length} seeded records
+        {status || (loading ? "Updating results..." : `${resources.length} shown from ${totalApprox} matching records`)}
       </div>
 
       <div className="resource-grid">
-        {filtered.map((resource) => (
+        {resources.map((resource) => (
           <article className="resource-card" key={resource.slug}>
             <div>
               <div className="resource-card__meta">
@@ -124,6 +126,18 @@ export function ResourceExplorer({
     </section>
   );
 }
+
+const emptyFacets: ResourceListResponse["facets"] = {
+  stages: [],
+  topics: [],
+  counties: [],
+  industries: [],
+  communities: [],
+  sectors: [],
+  companyStages: [],
+  employeeBands: [],
+  companyLocations: []
+};
 
 function Select({
   label,
