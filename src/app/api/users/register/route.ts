@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { listFounderSessions, registerFounderUser } from "@/lib/sessionStore";
+import {
+  BASECAMP_AUTH_COOKIE,
+  createFounderAuthSession,
+  listFounderSessions,
+  registerFounderUser
+} from "@/lib/sessionStore";
 
 const schema = z.object({
   name: z.string().min(1).max(80),
-  email: z.string().email().max(160)
+  email: z.string().email().max(160),
+  provider: z.enum(["site", "google", "microsoft", "meta"]).default("site")
 });
 
 export async function POST(request: Request) {
@@ -21,6 +27,15 @@ export async function POST(request: Request) {
   }
 
   const user = registerFounderUser(parsed.data);
+  const { token, expiresAt } = createFounderAuthSession(user.id);
   const sessions = listFounderSessions(user.id).slice(0, 6);
-  return NextResponse.json({ user, sessions });
+  const response = NextResponse.json({ user, sessions });
+  response.cookies.set(BASECAMP_AUTH_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    expires: new Date(expiresAt)
+  });
+  return response;
 }

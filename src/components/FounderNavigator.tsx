@@ -21,11 +21,13 @@ import {
   UserRound
 } from "lucide-react";
 import { fetchJson } from "@/lib/apiClient";
+import { inferFounderProfileFromText } from "@/lib/founderInference";
+import { useAuth } from "@/components/AuthContext";
 import type {
   AiSettings,
+  AuthProviderId,
   FounderSession,
   FounderProfile,
-  FounderStage,
   FounderUser,
   PlanCard,
   Recommendation,
@@ -49,6 +51,12 @@ const defaultRegisterForm = {
   email: ""
 };
 
+const providerOptions: Array<{ id: Exclude<AuthProviderId, "site">; label: string }> = [
+  { id: "microsoft", label: "Microsoft" },
+  { id: "google", label: "Google" },
+  { id: "meta", label: "Meta" }
+];
+
 const starterPrompts = [
   "I'm starting a landscaping business in St. George. What do I do first?",
   "I'm a pre-revenue software founder in Lehi and need the right state resources.",
@@ -68,6 +76,7 @@ export function FounderNavigator({
   communities: string[];
   compact?: boolean;
 }) {
+  const { user: registeredUser, loading: authLoading, signIn, signOut } = useAuth();
   const [profile, setProfile] = useState<FounderProfile>(() =>
     makeDefaultProfile(industries, counties, communities)
   );
@@ -77,11 +86,11 @@ export function FounderNavigator({
   const [loadingMessage, setLoadingMessage] = useState("");
   const [pendingTurn, setPendingTurn] = useState<SessionTurn | null>(null);
   const [draftTurns, setDraftTurns] = useState<SessionTurn[]>([]);
-  const [registeredUser, setRegisteredUser] = useState<FounderUser | null>(null);
   const [activeSession, setActiveSession] = useState<FounderSession | null>(null);
   const [savedSessions, setSavedSessions] = useState<FounderSession[]>([]);
   const [registerForm, setRegisterForm] = useState(defaultRegisterForm);
   const [sessionStatus, setSessionStatus] = useState("");
+  const [resumePromptDismissed, setResumePromptDismissed] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
 
@@ -107,6 +116,10 @@ export function FounderNavigator({
     () => (activeResource ? makePageGuide(activeResource, profile) : []),
     [activeResource, profile]
   );
+  const resumeSession =
+    registeredUser && savedSessions[0] && !activeSession && !resumePromptDismissed
+      ? savedSessions[0]
+      : null;
 
   const restoreSession = useCallback(
     async (session: FounderSession) => {
@@ -114,6 +127,7 @@ export function FounderNavigator({
       const restoredProfile = normalizeProfile(session.profile, industries, counties, communities);
 
       setActiveSession(session);
+      setResumePromptDismissed(true);
       setDraftTurns([]);
       setPendingTurn(null);
       setProfile(restoredProfile);
@@ -159,6 +173,9 @@ export function FounderNavigator({
         if (restoreLatest && sessions[0]) {
           await restoreSession(sessions[0]);
           setSessionStatus("Loaded your last navigator conversation.");
+        } else if (sessions[0]) {
+          setResumePromptDismissed(false);
+          setSessionStatus("Welcome back. Resume where you left off or start a fresh path.");
         }
       } catch {
         setSessionStatus("Could not load saved conversations yet.");
@@ -168,19 +185,21 @@ export function FounderNavigator({
   );
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("basecamp.founderUser");
-    if (!stored) return;
-    try {
-      const user = JSON.parse(stored) as FounderUser;
-      window.queueMicrotask(() => {
-        setRegisteredUser(user);
-        setRegisterForm({ name: user.name, email: user.email });
-        void loadSessionsForUser(user.id, true);
-      });
-    } catch {
-      window.localStorage.removeItem("basecamp.founderUser");
-    }
-  }, [loadSessionsForUser]);
+    if (authLoading) return;
+    const timer = window.setTimeout(() => {
+      if (!registeredUser) {
+        setSavedSessions([]);
+        setActiveSession(null);
+        setResumePromptDismissed(false);
+        setRegisterForm(defaultRegisterForm);
+        return;
+      }
+      setRegisterForm({ name: registeredUser.name, email: registeredUser.email });
+      setResumePromptDismissed(false);
+      void loadSessionsForUser(registeredUser.id, false);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [authLoading, loadSessionsForUser, registeredUser]);
 
   async function registerFounder() {
     if (!registerForm.name.trim() || !registerForm.email.trim()) {
@@ -189,33 +208,53 @@ export function FounderNavigator({
     }
     setSessionStatus("Creating your Basecamp profile...");
     try {
-      const result = await fetch("/api/users/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(registerForm)
+      const data = await signIn({
+        provider: "site",
+        name: registerForm.name,
+        email: registerForm.email
       });
-      if (!result.ok) throw new Error("Registration failed.");
-      const data = (await result.json()) as { user: FounderUser; sessions?: FounderSession[] };
-      setRegisteredUser(data.user);
-      window.localStorage.setItem("basecamp.founderUser", JSON.stringify(data.user));
-      setSavedSessions(data.sessions ?? []);
-
-      const latestDraft = draftTurns.at(-1) ?? pendingTurn;
-      if (latestDraft && response) {
-        await persistTurn(
-          response,
-          data.user,
-          latestDraft.userMessage,
-          latestDraft.profile,
-          latestDraft.completedSteps
-        );
-      } else if (data.sessions?.[0]) {
-        void restoreSession(data.sessions[0]);
-      }
-      setSessionStatus("Profile ready. New turns will be saved.");
-    } catch {
-      setSessionStatus("Could not create the profile. Try again in a moment.");
+      await finishAccountSetup(data.user!, data.sessions ?? []);
+    } catch (error) {
+      setSessionStatus(error instanceof Error ? error.message : "Could not create the profile. Try again in a moment.");
     }
+  }
+
+  async function registerWithProvider(provider: Exclude<AuthProviderId, "site">) {
+    setSessionStatus(`Connecting ${providerLabel(provider)}...`);
+    try {
+      const data = await signIn({
+        provider,
+        name: registerForm.name || undefined,
+        email: registerForm.email || undefined
+      });
+      await finishAccountSetup(data.user!, data.sessions ?? []);
+    } catch (error) {
+      setSessionStatus(error instanceof Error ? error.message : `Could not connect ${providerLabel(provider)}.`);
+    }
+  }
+
+  async function finishAccountSetup(user: FounderUser, sessions: FounderSession[]) {
+    setRegisterForm({ name: user.name, email: user.email });
+    setSavedSessions(sessions);
+    setResumePromptDismissed(false);
+
+    const latestDraft = draftTurns.at(-1) ?? pendingTurn;
+    if (latestDraft && response) {
+      await persistTurn(
+        response,
+        user,
+        latestDraft.userMessage,
+        latestDraft.profile,
+        latestDraft.completedSteps
+      );
+      setSessionStatus("Profile ready. This conversation is saved.");
+      return;
+    }
+    if (sessions[0]) {
+      setSessionStatus(`Welcome back, ${firstName(user.name)}. Do you want to resume where you left off?`);
+      return;
+    }
+    setSessionStatus("Profile ready. New turns will be saved.");
   }
 
   async function submitConversation(event: FormEvent<HTMLFormElement>) {
@@ -375,15 +414,15 @@ export function FounderNavigator({
     setCompletedSteps([]);
     setDraftTurns([]);
     setPendingTurn(null);
+    setResumePromptDismissed(true);
     setActiveResourceId(null);
     setProfile(makeDefaultProfile(industries, counties, communities));
     setMessage("");
     setSessionStatus("Started a new conversation.");
   }
 
-  function signOutFounder() {
-    window.localStorage.removeItem("basecamp.founderUser");
-    setRegisteredUser(null);
+  async function signOutFounder() {
+    await signOut();
     setActiveSession(null);
     setSavedSessions([]);
     setResponse(null);
@@ -416,7 +455,7 @@ export function FounderNavigator({
                 <UserRound size={15} aria-hidden="true" />
                 {registeredUser.name}
               </span>
-              <button className="ghost-button" type="button" onClick={signOutFounder}>
+              <button className="ghost-button" type="button" onClick={() => void signOutFounder()}>
                 <LogOut size={16} aria-hidden="true" />
                 Sign out
               </button>
@@ -430,33 +469,49 @@ export function FounderNavigator({
               <div>
                 <span className="eyebrow">
                   <History size={15} aria-hidden="true" />
-                  Saved conversations
+                  Welcome back, {firstName(registeredUser.name)}
                 </span>
                 <p className="status-line">
-                  {activeSession
-                    ? activeSession.title
-                    : savedSessions.length
-                      ? "Choose a saved path or start fresh."
-                      : "Your next turn will create a saved path."}
+                  {resumeSession
+                    ? "Do you want to resume where you left off?"
+                    : activeSession
+                      ? activeSession.title
+                      : savedSessions.length
+                        ? "Choose a saved path or start fresh."
+                        : "Your next turn will create a saved path."}
                 </p>
               </div>
               <div className="button-row">
-                {savedSessions.slice(0, 3).map((session) => (
-                  <button
-                    className={session.id === activeSession?.id ? "ghost-button active" : "ghost-button"}
-                    type="button"
-                    key={session.id}
-                    onClick={() => void restoreSession(session)}
-                  >
-                    {session.title}
+                {resumeSession ? (
+                  <button className="ghost-button active" type="button" onClick={() => void restoreSession(resumeSession)}>
+                    Resume latest
                   </button>
-                ))}
+                ) : (
+                  savedSessions.slice(0, 3).map((session) => (
+                    <button
+                      className={session.id === activeSession?.id ? "ghost-button active" : "ghost-button"}
+                      type="button"
+                      key={session.id}
+                      onClick={() => void restoreSession(session)}
+                    >
+                      {session.title}
+                    </button>
+                  ))
+                )}
                 <button className="ghost-button" type="button" onClick={startNewPath}>
                   <RotateCcw size={16} aria-hidden="true" />
-                  New
+                  {resumeSession ? "Start fresh" : "New"}
                 </button>
               </div>
             </>
+          ) : authLoading ? (
+            <div>
+              <span className="eyebrow">
+                <Save size={15} aria-hidden="true" />
+                Checking account
+              </span>
+              <p className="status-line">Loading your Basecamp profile.</p>
+            </div>
           ) : (
             <>
               <div>
@@ -464,7 +519,20 @@ export function FounderNavigator({
                   <Save size={15} aria-hidden="true" />
                   Save and resume
                 </span>
-                <p className="status-line">Create a lightweight profile when you want this path to follow you.</p>
+                <p className="status-line">Create an account when you want this path to follow you.</p>
+              </div>
+              <div className="session-panel__providers" aria-label="Provider registration">
+                {providerOptions.map((provider) => (
+                  <button
+                    type="button"
+                    className={`provider-button provider-button--${provider.id}`}
+                    key={provider.id}
+                    onClick={() => void registerWithProvider(provider.id)}
+                  >
+                    <span aria-hidden="true" />
+                    {provider.label}
+                  </button>
+                ))}
               </div>
               <div className="session-panel__fields">
                 <input
@@ -780,76 +848,7 @@ function inferProfileFromMessage(
   industries: string[],
   communities: string[]
 ): FounderProfile {
-  const text = input.toLowerCase();
-  return {
-    ...current,
-    stage: inferStage(text, current.stage),
-    industry: inferIndustry(text, current.industry, industries),
-    county: inferCounty(text, current.county, counties),
-    community: inferCommunity(text, current.community, communities),
-    goal: input,
-    mode: "chat"
-  };
-}
-
-function inferStage(text: string, fallback: FounderStage): FounderStage {
-  if (/\b(exit|sell|succession|close|closing)\b/.test(text)) return "exit";
-  if (/\b(fund|funding|grant|loan|capital|investor|pitch)\b/.test(text)) return "fund";
-  if (/\b(grow|growth|hire|hiring|export|scale|workforce)\b/.test(text)) return "grow";
-  if (/\b(validate|pre[-\s]?revenue|mvp|prototype|test customers?|market research)\b/.test(text)) {
-    return "validate";
-  }
-  if (/\b(idea|brainstorm|thinking about|exploring)\b/.test(text)) return "idea";
-  if (/\b(start|launch|register|license|licence|llc|ein|permit|open)\b/.test(text)) return "start";
-  return fallback;
-}
-
-function inferIndustry(text: string, fallback: string, industries: string[]) {
-  const candidates: Array<[RegExp, string]> = [
-    [/\b(software|saas|app|ai|tech|platform|developer)\b/, "Software and Information Technology"],
-    [/\b(landscap|lawn|yard|farm|agricultur|ranch|garden)\b/, "Agriculture"],
-    [/\b(food|restaurant|cafe|catering|truck|hotel|tourism|hospitality)\b/, "Hospitality and Food Services"],
-    [/\b(health|clinic|medical|device|biotech|life science)\b/, "Life Sciences and Healthcare"],
-    [/\b(manufactur|factory|industrial|hardware|machining)\b/, "Manufacturing"],
-    [/\b(film|music|artist|studio|game|entertainment|recreation)\b/, "Arts and Entertainment and Recreation"],
-    [/\b(finance|bank|insurance|fintech)\b/, "Financial Services"],
-    [/\b(retail|ecommerce|consumer product|packaged|cpg)\b/, "Consumer Packaged Goods"]
-  ];
-  return candidates.find(([pattern, industry]) => pattern.test(text) && industries.includes(industry))?.[1] ?? fallback;
-}
-
-function inferCounty(text: string, fallback: string, counties: string[]) {
-  const exactCounty = counties.find((county) => text.includes(county.toLowerCase()));
-  if (exactCounty) return exactCounty;
-  const cityToCounty: Record<string, string> = {
-    "st. george": "Washington",
-    "saint george": "Washington",
-    washington: "Washington",
-    lehi: "Utah",
-    provo: "Utah",
-    orem: "Utah",
-    "salt lake": "Salt Lake",
-    sandy: "Salt Lake",
-    ogden: "Weber",
-    logan: "Cache",
-    "cedar city": "Iron",
-    "park city": "Summit",
-    moab: "Grand"
-  };
-  const match = Object.entries(cityToCounty).find(([city, county]) => text.includes(city) && counties.includes(county));
-  return match?.[1] ?? fallback;
-}
-
-function inferCommunity(text: string, fallback: string, communities: string[]) {
-  const candidates: Array<[RegExp, string]> = [
-    [/\b(woman|women|female)\b/, "Women"],
-    [/\b(veteran|military)\b/, "Veteran"],
-    [/\b(student|college|university)\b/, "Student"],
-    [/\b(rural|small town)\b/, "Rural"],
-    [/\b(immigrant|refugee|new american)\b/, "New American"],
-    [/\b(multicultural|minority|asian|latino|hispanic|pacific islander|black)\b/, "Multicultural"]
-  ];
-  return candidates.find(([pattern, community]) => pattern.test(text) && communities.includes(community))?.[1] ?? fallback;
+  return inferFounderProfileFromText(current, input, { counties, industries, communities });
 }
 
 function makeDraftTurn(
@@ -1038,6 +1037,20 @@ function sortCountyOptions(counties: string[]) {
   return Array.from(new Set(counties.filter(Boolean))).sort((a, b) =>
     a.localeCompare(b, undefined, { sensitivity: "base" })
   );
+}
+
+function firstName(name: string) {
+  return name.trim().split(/\s+/)[0] || "founder";
+}
+
+function providerLabel(provider: AuthProviderId) {
+  const labels: Record<AuthProviderId, string> = {
+    site: "Startup State",
+    google: "Google",
+    microsoft: "Microsoft",
+    meta: "Meta"
+  };
+  return labels[provider];
 }
 
 function formatAssistantText(text: string) {

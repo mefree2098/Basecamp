@@ -1,5 +1,11 @@
 import { modelFallbacks } from "./site-context";
 import { isFormationIntent, makePlanCards, recommendResources } from "./recommendations";
+import {
+  hasFundingIntent,
+  hasOperatingCompanySignals,
+  hasVentureCapitalIntent,
+  inferStageFromText
+} from "./founderInference";
 import type {
   AiProvider,
   AiSettings,
@@ -31,6 +37,7 @@ export const BASECAMP_SYSTEM_PROMPT = [
   "- Every plan item is a request/task with a status: Done, Active, Queued, or Blocked. Treat exactly one unfinished item as Active.",
   "- Start with the earliest necessary step. Do not let the founder jump to funding, pitch competitions, or grants if registration, business plan, validation, or basic operations are prerequisite for their situation.",
   "- For a new Utah business, use this default order unless the founder's situation clearly overrides it: clarify idea/customer, choose name/entity structure, draft business plan essentials, register/licensure with Utah and local authorities, get EIN/FEIN, set up banking/accounting/insurance/records, confirm taxes, then consider community support and funding.",
+  "- If the founder says they are already operating, have paying customers/revenue/traction, or are raising an angel/VC/venture round, treat that as a funding-stage request. Do not send them to formation, EIN, or bank-account setup unless they explicitly say those basics are missing.",
   "- For a growth-stage company, use the growth order: identify the growth bottleneck, prepare strategic/funding materials, choose capital/workforce/contracts/export/community path, use exact resource pages, then schedule follow-up.",
   "- For exit/closure, use the exit order: clarify sale/succession/closure, verify legal/tax/licensing obligations, contact appropriate advisors/agencies, then document completion.",
   "Step-by-step operating protocol:",
@@ -100,9 +107,10 @@ export async function runWizardTurn({
   sessionContext?: SessionContext;
 }): Promise<WizardResponse> {
   const isContinuation = isContinuationTurn(message, sessionContext);
+  const turnProfile = refineProfileForTurn(profile, message, isContinuation);
   const effectiveProfile = {
-    ...profile,
-    goal: isContinuation ? profile.goal : message || profile.goal
+    ...turnProfile,
+    goal: isContinuation ? turnProfile.goal : message || turnProfile.goal
   };
   const recommendations = recommendResources(effectiveProfile, resources, 7);
   const planCards =
@@ -161,6 +169,20 @@ export function orderRecommendationsByCitations(
       return true;
     });
   return [...cited, ...recommendations.filter((item) => !seen.has(item.resource.id))];
+}
+
+function refineProfileForTurn(
+  profile: FounderProfile,
+  message: string,
+  isContinuation: boolean
+): FounderProfile {
+  if (isContinuation) return profile;
+  const goal = message || profile.goal;
+  return {
+    ...profile,
+    stage: inferStageFromText(goal, profile.stage),
+    goal
+  };
 }
 
 async function callProvider(settings: AiSettings, context: string) {
@@ -263,16 +285,20 @@ export function buildGroundedContext(
   recommendations: ReturnType<typeof recommendResources>,
   sessionContext?: SessionContext
 ) {
+  const turnProfile = refineProfileForTurn(profile, message, isContinuationTurn(message, sessionContext));
   const effectiveProfile = {
-    ...profile,
-    goal: isContinuationTurn(message, sessionContext) ? profile.goal : message || profile.goal
+    ...turnProfile,
+    goal: isContinuationTurn(message, sessionContext) ? turnProfile.goal : message || turnProfile.goal
   };
   return [
     BASECAMP_SYSTEM_PROMPT,
-    `Founder profile: stage=${profile.stage}, industry=${profile.industry}, county=${profile.county}, community=${profile.community}.`,
+    `Founder profile: stage=${effectiveProfile.stage}, industry=${effectiveProfile.industry}, county=${effectiveProfile.county}, community=${effectiveProfile.community}.`,
     `Founder message: ${message || profile.goal}`,
     isFormationIntent(effectiveProfile)
       ? "Formation guidance for this intent: include the business setup sequence, in order: choose name/entity structure, Utah registration/licensure, EIN/FEIN, business bank account. Keep it simple and cite the matching resources below."
+      : "",
+    hasFundingIntent(effectiveProfile.goal)
+      ? "Funding guidance for this intent: treat an already-operating company with customers as capital-ready, not formation-stage. Start with investor readiness, target investor/resource fit, pitch materials, warm-introduction or intake paths, and follow-up tracking. Do not route to EIN, bank account, or basic startup setup unless the founder says those are missing."
       : "",
     sessionContext ? formatSessionContext(sessionContext) : "",
     formatTrackedPlan(planPreview(effectiveProfile, recommendations), sessionContext),
@@ -340,6 +366,10 @@ function localResponse(
     };
   }
 
+  if (effectiveProfile.stage === "fund") {
+    return fundingResponse(settings, effectiveProfile, recommendations, planCards, sessionContext);
+  }
+
   const assistantMessage = lead
     ? [
         `I created a working founder plan. Active step: ${nextActivePlanCard(planCards, sessionContext?.completedSteps)?.title ?? `use ${lead.resource.title}`}.`,
@@ -371,6 +401,52 @@ function findRecommendation(
   id: string
 ) {
   return recommendations.find((item) => item.resource.id === id);
+}
+
+function fundingResponse(
+  settings: AiSettings,
+  profile: FounderProfile,
+  recommendations: ReturnType<typeof recommendResources>,
+  planCards: ReturnType<typeof makePlanCards>,
+  sessionContext?: SessionContext
+): WizardResponse {
+  const lead = recommendations[0];
+  const activeStep =
+    nextActivePlanCard(planCards, sessionContext?.completedSteps)?.title ??
+    "prepare the investor-ready funding path";
+  const isVentureRound = hasVentureCapitalIntent(profile.goal);
+  const isOperatingCompany = hasOperatingCompanySignals(profile.goal);
+  const secondary = recommendations.slice(1, 3);
+  const resourceLine = lead
+    ? `2. Start with ${lead.resource.title} at ${lead.resource.link}; capture whether it is a fit for your stage, sector, check size, and contact or introduction path. [resource:${lead.resource.id}]`
+    : "2. Build the target list from Utah funding resources that match your stage, sector, and location.";
+  const compareLine = secondary.length
+    ? `3. Compare ${secondary
+        .map((item) => `${item.resource.title} [resource:${item.resource.id}]`)
+        .join(" and ")} as additional targets before you spend time on applications or outreach.`
+    : "3. Track each outreach target, fit notes, and follow-up date before moving to submissions.";
+  const assistantMessage = [
+    `I created a ${isVentureRound ? "capital-readiness" : "funding"} plan. Active step: ${activeStep}.`,
+    formatPlanStatus(planCards, sessionContext?.completedSteps),
+    isOperatingCompany
+      ? "1. Today: assemble the investor packet for an operating company: one-line positioning, customer/revenue proof, current traction, round size, use of funds, and the warm-intro target list."
+      : "1. Today: assemble the funding packet: concise business summary, traction or validation proof, budget, use of funds, and timeline.",
+    resourceLine,
+    compareLine,
+    "Tell me which resource looks like a fit or paste the intake/contact question, and I will help turn it into the next outreach step."
+  ].join("\n\n");
+
+  return {
+    assistantMessage,
+    recommendations,
+    planCards,
+    usedProvider: settings.provider || "mock",
+    guardrails: {
+      deterministicFilters: true,
+      citationsRequired: true,
+      externalBrowsingUsed: false
+    }
+  };
 }
 
 function continuationResponse(

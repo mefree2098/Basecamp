@@ -1,19 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { type ChangeEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Bot,
   Check,
   ClipboardList,
   DatabaseZap,
+  FileUp,
   MapPinned,
   ShieldCheck,
   Upload,
   X
 } from "lucide-react";
 import { fetchJson } from "@/lib/apiClient";
-import type { AdminSummaryResponse, CompanyDraftSummary } from "@/lib/types";
+import type {
+  AdminSummaryResponse,
+  CompanyDraftSummary,
+  PublicCompanyImportPreview,
+  PublicCompanyImportResult
+} from "@/lib/types";
 
 export function AdminConsole() {
   const [kind, setKind] = useState<"resources" | "companies">("resources");
@@ -24,6 +30,9 @@ export function AdminConsole() {
   const [needsReview, setNeedsReview] = useState(0);
   const [drafts, setDrafts] = useState<CompanyDraftSummary[]>([]);
   const [draftStatus, setDraftStatus] = useState("");
+  const [publicPreview, setPublicPreview] = useState<PublicCompanyImportPreview | null>(null);
+  const [publicLimit, setPublicLimit] = useState(1000);
+  const [publicImportStatus, setPublicImportStatus] = useState("");
 
   const loadSummary = useCallback(async () => {
     const result = await fetchJson<AdminSummaryResponse>("/api/admin/summary");
@@ -33,14 +42,31 @@ export function AdminConsole() {
     setDrafts(result.drafts);
   }, []);
 
+  const loadPublicPreview = useCallback(async () => {
+    const preview = await fetchJson<PublicCompanyImportPreview>("/api/admin/public-company-import");
+    setPublicPreview(preview);
+    setPublicLimit(preview.defaultLimit);
+  }, []);
+
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       void loadSummary().catch(() =>
         setDraftStatus("Could not load admin summary from the platform API.")
       );
+      void loadPublicPreview().catch(() =>
+        setPublicImportStatus("Could not reach the UGRC public source preview.")
+      );
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [loadSummary]);
+  }, [loadPublicPreview, loadSummary]);
+
+  async function loadCsvFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCsv(await file.text());
+    setStatus(`Loaded ${file.name}. Review the CSV below, then import.`);
+    event.target.value = "";
+  }
 
   async function importCsv() {
     setStatus("Importing...");
@@ -53,6 +79,26 @@ export function AdminConsole() {
     }).catch((error) => ({ error: error instanceof Error ? error.message : "Import failed." }));
     setStatus(result.error ? result.error : `Imported ${result.count ?? 0} ${kind}.`);
     if (!result.error) void loadSummary();
+  }
+
+  async function importPublicSource() {
+    setPublicImportStatus("Importing vetted public business records...");
+    const result = await fetchJson<PublicCompanyImportResult>("/api/admin/public-company-import", {
+      method: "POST",
+      body: JSON.stringify({ limit: publicLimit })
+    }).catch((error) => ({
+      error: error instanceof Error ? error.message : "Public business import failed."
+    }));
+    if ("error" in result) {
+      setPublicImportStatus(result.error);
+      return;
+    }
+    setPublicPreview(result);
+    setPublicImportStatus(
+      `Imported ${result.importedCount.toLocaleString()} records from ${result.source.name}. ` +
+        `${result.skippedDuplicateCount.toLocaleString()} duplicates skipped.`
+    );
+    await loadSummary();
   }
 
   async function reviewDraft(id: string, action: "approve" | "reject") {
@@ -116,6 +162,13 @@ export function AdminConsole() {
               <option value="companies">Companies</option>
             </select>
           </label>
+          <label className="file-import-field">
+            <span>
+              <FileUp size={15} aria-hidden="true" />
+              Upload CSV file
+            </span>
+            <input type="file" accept=".csv,text/csv" onChange={(event) => void loadCsvFile(event)} />
+          </label>
           <label className="message-box">
             <span>Paste CSV</span>
             <textarea
@@ -129,6 +182,48 @@ export function AdminConsole() {
             Import dataset
           </button>
           {status && <p className="status-line">{status}</p>}
+        </div>
+
+        <div className="admin-panel">
+          <h2>Public business source</h2>
+          <p>
+            Import cross-industry Utah business records from UGRC Utah Open Source Places. This
+            source is maintained through Utah&apos;s SGID, updated monthly, and keeps source
+            provenance on every imported profile.
+          </p>
+          <div className="source-import-card">
+            <strong>{publicPreview?.source.name ?? "Loading public source..."}</strong>
+            <span>
+              {publicPreview
+                ? `${publicPreview.availableCount.toLocaleString()} eligible business records available`
+                : "Checking UGRC ArcGIS source"}
+            </span>
+            {publicPreview && (
+              <Link className="text-link" href={publicPreview.source.url} target="_blank">
+                Source details
+                <MapPinned size={15} aria-hidden="true" />
+              </Link>
+            )}
+          </div>
+          <label className="select-field">
+            <span>Import limit</span>
+            <select value={publicLimit} onChange={(event) => setPublicLimit(Number(event.target.value))}>
+              <option value={500}>500 records</option>
+              <option value={1000}>1,000 records</option>
+              <option value={2500}>2,500 records</option>
+              <option value={5000}>5,000 records</option>
+            </select>
+          </label>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={() => void importPublicSource()}
+            disabled={!publicPreview}
+          >
+            <DatabaseZap size={16} aria-hidden="true" />
+            Import public businesses
+          </button>
+          {publicImportStatus && <p className="status-line">{publicImportStatus}</p>}
         </div>
 
         <div className="admin-panel">

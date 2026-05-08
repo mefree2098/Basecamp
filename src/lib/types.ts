@@ -60,9 +60,20 @@ export type Company = {
   coordinates: {
     lat: number;
     lng: number;
-    confidence: "city" | "state" | "synthetic";
+    confidence: "city" | "state" | "synthetic" | "source";
   };
   verificationStatus: "seeded" | "claimed" | "pending";
+  source?: CompanySourceMetadata;
+};
+
+export type CompanySourceMetadata = {
+  id: string;
+  name: string;
+  url: string;
+  sourceRecordId?: string;
+  fetchedAt?: string;
+  license?: string;
+  note?: string;
 };
 
 export type Recommendation = {
@@ -162,12 +173,38 @@ export type WizardResponse = {
   };
 };
 
+export type AuthProviderId = "site" | "google" | "microsoft" | "meta";
+
+export type UserRole = "founder" | "company_editor" | "reviewer" | "admin";
+
 export type FounderUser = {
   id: string;
   name: string;
   email: string;
+  avatarUrl?: string;
+  provider: AuthProviderId;
+  authProviders: AuthProviderId[];
+  roles: UserRole[];
   createdAt: string;
   lastSeenAt: string;
+};
+
+export type UserNotification = {
+  id: string;
+  userId: string;
+  category: "form" | "grant" | "permit" | "profile" | "wizard";
+  title: string;
+  message: string;
+  status: "submitted" | "in_review" | "action_required" | "approved" | "info";
+  href?: string;
+  createdAt: string;
+  readAt?: string;
+};
+
+export type AuthSessionResponse = {
+  user: FounderUser | null;
+  notifications: UserNotification[];
+  unreadCount: number;
 };
 
 export type SessionTurn = {
@@ -222,6 +259,32 @@ export type AdminSummaryResponse = {
   companyCount: number;
   needsReview: number;
   drafts: CompanyDraftSummary[];
+};
+
+export type PublicCompanyImportSource = {
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  steward: string;
+  license: string;
+  updateCadence: string;
+  reliabilityNote: string;
+};
+
+export type PublicCompanyImportPreview = {
+  source: PublicCompanyImportSource;
+  availableCount: number;
+  defaultLimit: number;
+  maxLimit: number;
+  categories: string[];
+};
+
+export type PublicCompanyImportResult = PublicCompanyImportPreview & {
+  fetchedCount: number;
+  importedCount: number;
+  skippedDuplicateCount: number;
+  storedPath: string;
 };
 
 export type SessionContext = {

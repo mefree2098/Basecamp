@@ -157,7 +157,11 @@ function googleGeocodingKey() {
 }
 
 function isGeocodableCompany(company: Company) {
-  return Boolean(company.address && /\but\b|\butah\b/i.test(company.address));
+  return Boolean(
+    company.coordinates.confidence !== "source" &&
+      company.address &&
+      /\but\b|\butah\b/i.test(company.address)
+  );
 }
 
 function geocodeCacheKey(company: Company) {

@@ -1,4 +1,9 @@
 import { stageLabels } from "./site-context";
+import {
+  hasFundingIntent,
+  hasOperatingCompanySignals,
+  hasVentureCapitalIntent
+} from "./founderInference";
 import type { FounderProfile, PlanCard, Recommendation, Resource } from "./types";
 
 export function recommendResources(
@@ -232,6 +237,16 @@ function scoreResource(profile: FounderProfile, resource: Resource) {
     if (text.includes(token)) score += 3;
   }
 
+  const fundingIntent = hasFundingIntent(profile.goal);
+  const ventureIntent = hasVentureCapitalIntent(profile.goal);
+  const operatingCompanyIntent = hasOperatingCompanySignals(profile.goal);
+  if (fundingIntent && resource.stages.includes("fund")) score += 24;
+  if (ventureIntent && isVentureCapitalResource(resource)) score += 38;
+  if (ventureIntent && isLoanOrGrantResource(resource)) score -= 18;
+  if (ventureIntent && isMentorFirstResource(resource)) score -= 32;
+  if (profile.stage === "fund" && operatingCompanyIntent && isFormationResource(resource)) score -= 72;
+  if (profile.stage === "fund" && isFormationResource(resource)) score -= 28;
+  if (profile.stage === "fund" && isStartupBasicsResource(resource)) score -= 20;
   if (isFormationIntent(profile) && isFormationResource(resource)) score += 22;
   if (mentionsBusinessBanking(profile.goal) && /bank account|business bank/.test(text)) score += 18;
   score += directLinkScore(resource.link);
@@ -277,6 +292,39 @@ export function isFormationIntent(profile: Pick<FounderProfile, "goal" | "stage"
 function isFormationResource(resource: Resource) {
   const text = [resource.title, resource.description, ...resource.topics].join(" ").toLowerCase();
   return /registration|licensure|legal formation|form a new business|ein|fein|business bank|sbdc|score/.test(
+    text
+  );
+}
+
+function isVentureCapitalResource(resource: Resource) {
+  const text = [
+    resource.title,
+    resource.description,
+    resource.link,
+    ...resource.topics
+  ]
+    .join(" ")
+    .toLowerCase();
+  return /venture capital|venture partners?|ventures?\b|\.vc\b|\bvc\b|angel|capital firm|investment fund|seed fund|seed-stage|pre-seed|first checks?|startup fund|investing first checks|early-stage investments?/.test(
+    text
+  );
+}
+
+function isLoanOrGrantResource(resource: Resource) {
+  const text = [resource.title, resource.description, resource.link, ...resource.topics]
+    .join(" ")
+    .toLowerCase();
+  return /loan|microloan|revolving loan|grant|non-dilutive|sbir|sttr|credit initiative/.test(text);
+}
+
+function isMentorFirstResource(resource: Resource) {
+  const text = [resource.title, resource.description, ...resource.topics].join(" ").toLowerCase();
+  return /score|mentor|mentoring|consultation|advisor|idea explorer|first step entrepreneur/.test(text);
+}
+
+function isStartupBasicsResource(resource: Resource) {
+  const text = [resource.title, resource.description, ...resource.topics].join(" ").toLowerCase();
+  return /start a business|registration|licensure|business plan|bank account|ein|fein|idea explorer/.test(
     text
   );
 }

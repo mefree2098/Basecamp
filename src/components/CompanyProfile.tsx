@@ -53,7 +53,7 @@ export function CompanyProfile({ slug }: { slug: string }) {
       <div className="profile-hero">
         <span className="eyebrow">
           <Building2 size={15} aria-hidden="true" />
-          Startup profile
+          {company.displayType === "public-business" ? "Business profile" : "Startup profile"}
         </span>
         <div className="company-profile-title">
           <span className="company-logo-gem" aria-hidden="true">
@@ -178,7 +178,17 @@ export function CompanyProfile({ slug }: { slug: string }) {
         <article className="admin-panel">
           <ShieldCheck size={20} aria-hidden="true" />
           <h2>Review state</h2>
-          <p>Public data is seeded until a verified company representative claims this profile.</p>
+          <p>
+            {company.source
+              ? `Seeded from ${company.source.name}. ${company.source.note ?? "A verified company representative can claim and update this profile."}`
+              : "Public data is seeded until a verified company representative claims this profile."}
+          </p>
+          {company.source && (
+            <Link className="text-link" href={company.source.url} target="_blank">
+              View source
+              <ArrowUpRight size={15} aria-hidden="true" />
+            </Link>
+          )}
         </article>
       </div>
     </section>

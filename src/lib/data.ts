@@ -361,7 +361,7 @@ function mergeCompanyOverrides(companies: Company[]) {
       const name = row.name ?? "Untitled company";
       const address = row.address ?? "Utah";
       return {
-        slug: slugify(name),
+        slug: row.slug ?? slugify(name),
         name,
         displayType: row.displayType ?? "profile",
         linkedin: row.linkedin,
@@ -379,7 +379,8 @@ function mergeCompanyOverrides(companies: Company[]) {
         jobPostings: row.jobPostings ?? [],
         gallery: row.gallery ?? [],
         coordinates: row.coordinates ?? coordinatesForAddress(address, name),
-        verificationStatus: "pending"
+        verificationStatus: row.verificationStatus ?? "pending",
+        source: row.source
       } satisfies Company;
     });
   return [...imported, ...companies];

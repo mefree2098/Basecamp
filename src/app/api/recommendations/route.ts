@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { loadResources } from "@/lib/data";
+import { inferStageFromText } from "@/lib/founderInference";
 import { makePlanCards, recommendResources } from "@/lib/recommendations";
 import type { RecommendationResponse } from "@/lib/types";
 
@@ -33,13 +34,17 @@ export async function POST(request: Request) {
     );
   }
 
+  const profile = {
+    ...parsed.data.profile,
+    stage: inferStageFromText(parsed.data.profile.goal, parsed.data.profile.stage)
+  };
   const recommendations = orderRecommendationsByIds(
-    recommendResources(parsed.data.profile, loadResources(), parsed.data.limit),
+    recommendResources(profile, loadResources(), parsed.data.limit),
     parsed.data.orderedIds
   );
   const response: RecommendationResponse = {
     recommendations,
-    planCards: makePlanCards(parsed.data.profile, recommendations)
+    planCards: makePlanCards(profile, recommendations)
   };
   return NextResponse.json(response);
 }

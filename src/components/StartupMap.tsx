@@ -1382,7 +1382,7 @@ function buildMapOverlayItems(
   const buckets = new Map<string, MapOverlayItem>();
   for (const company of companies) {
     const position = mapLocationForCompany(company, geocodedLocations);
-    const cellSize = position.confidence === "google" ? 0.08 : 0.22;
+    const cellSize = position.confidence === "google" || position.confidence === "source" ? 0.08 : 0.22;
     const key = `${Math.round(position.lat / cellSize)}:${Math.round(position.lng / cellSize)}`;
     const current = buckets.get(key);
     if (!current) {
@@ -1404,6 +1404,8 @@ function buildMapOverlayItems(
       confidence:
         current.position.confidence === "google" || position.confidence === "google"
           ? "google"
+          : current.position.confidence === "source" || position.confidence === "source"
+            ? "source"
           : current.position.confidence
     };
     current.count = nextCount;
@@ -1413,7 +1415,11 @@ function buildMapOverlayItems(
 }
 
 function isGeocodableCompany(company: Company) {
-  return Boolean(company.address && /\but\b|\butah\b/i.test(company.address));
+  return Boolean(
+    company.coordinates.confidence !== "source" &&
+      company.address &&
+      /\but\b|\butah\b/i.test(company.address)
+  );
 }
 
 function geocodeCacheKey(company: Company) {

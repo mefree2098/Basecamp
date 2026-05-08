@@ -45,4 +45,58 @@ describe("recommendResources", () => {
     expect(top.resource.slug).toBe("salt-lake-funding");
     expect(top.citations).toEqual(["resource:1"]);
   });
+
+  it("keeps VC and angel intent ahead of generic mentor and setup resources", () => {
+    const profile: FounderProfile = {
+      stage: "fund",
+      county: "Salt Lake",
+      industry: "Software and Information Technology",
+      community: "Any",
+      goal: "18 months in with paying customers, ready to raise a venture round from angel groups and VCs",
+      mode: "chat"
+    };
+    const vcResource: Resource = {
+      id: "vc",
+      slug: "vc",
+      title: "Seed Venture Partners",
+      description: "Early stage venture capital firm investing first checks in B2B SaaS startups.",
+      communities: [],
+      industries: ["Software and Information Technology"],
+      locations: ["Utah"],
+      topics: ["Funding"],
+      stages: ["fund"],
+      link: "https://example.vc",
+      freshness: { status: "seeded" }
+    };
+    const scoreResource: Resource = {
+      id: "score",
+      slug: "score",
+      title: "SCORE find a mentor",
+      description: "Mentoring path for first business decisions.",
+      communities: ["Any"],
+      industries: ["Software and Information Technology"],
+      locations: ["Salt Lake"],
+      topics: ["Mentoring", "Funding", "Start a Business"],
+      stages: ["start", "fund"],
+      link: "https://www.score.org/ut/utah/mentors/",
+      freshness: { status: "reviewed" }
+    };
+    const bankResource: Resource = {
+      id: "bank",
+      slug: "bank",
+      title: "Business bank account step",
+      description: "Open a business bank account after entity setup.",
+      communities: ["Any"],
+      industries: ["Software and Information Technology"],
+      locations: ["Salt Lake"],
+      topics: ["Start a Business", "Bank Account"],
+      stages: ["start"],
+      link: "https://startup.utah.gov/business-operations/",
+      freshness: { status: "reviewed" }
+    };
+
+    const [top] = recommendResources(profile, [scoreResource, bankResource, vcResource]);
+
+    expect(top.resource.id).toBe("vc");
+  });
 });

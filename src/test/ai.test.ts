@@ -6,6 +6,7 @@ import {
   orderRecommendationsByCitations,
   runWizardTurn
 } from "@/lib/ai";
+import { inferStageFromText } from "@/lib/founderInference";
 import type { FounderProfile, Recommendation, Resource } from "@/lib/types";
 
 describe("AI model catalog", () => {
@@ -212,6 +213,109 @@ describe("Basecamp guide prompt", () => {
       "Draft a one-page plan for i completed the checked steps. what's next?"
     );
   });
+
+  it("routes an operating SaaS founder asking for angel and VC capital away from setup basics", async () => {
+    const message =
+      "Hi, I am Priya, 31 and live in Salt Lake City. I am a B2B SaaS founder, 18 months in, paying customers, ready to raise her first venture round. Specifically looking for angel groups and VCs.";
+    const profile: FounderProfile = {
+      stage: "start",
+      industry: "Software and Information Technology",
+      county: "Salt Lake",
+      community: "Any",
+      goal: message,
+      mode: "chat"
+    };
+
+    const response = await runWizardTurn({
+      settings: { provider: "mock", model: "basecamp-local-guide", thinkingLevel: "medium" },
+      profile,
+      message,
+      resources: [
+        fundingResource(
+          "3386",
+          "Startup Ignition Ventures",
+          "Utah-based early stage pre-seed venture capital firm investing first checks into visionary startups with validated potential. Focuses on technology, software, and SaaS.",
+          "https://startupignition.com/ventures"
+        ),
+        fundingResource(
+          "2607",
+          "Grix",
+          "Utah VC resource for software and information technology founders.",
+          "https://www.grix.vc/"
+        ),
+        formationResource(
+          "basecamp-score-mentor",
+          "SCORE find a mentor",
+          "Direct SCORE mentoring path for matching with an experienced volunteer mentor to review a startup idea, launch plan, and first business decisions.",
+          "https://www.score.org/ut/utah/mentors/"
+        ),
+        formationResource(
+          "basecamp-sba-business-bank-account",
+          "Startup State business bank account step",
+          "Direct Startup State operations step for opening a business bank account once the founder has a legal business name, entity records, and tax ID.",
+          "https://startup.utah.gov/business-operations/"
+        )
+      ]
+    });
+
+    const topIds = response.recommendations.slice(0, 3).map((item) => item.resource.id);
+
+    expect(response.planCards[0]?.title).toContain("financials");
+    expect(response.assistantMessage).toContain("capital-readiness plan");
+    expect(response.assistantMessage).toContain("investor packet");
+    expect(response.assistantMessage).not.toContain("business bank account");
+    expect(response.assistantMessage).not.toContain("SCORE find a mentor");
+    expect(topIds).not.toContain("basecamp-score-mentor");
+    expect(topIds).not.toContain("basecamp-sba-business-bank-account");
+    expect(topIds).toEqual(expect.arrayContaining(["3386"]));
+  });
+
+  it("adds funding guidance to grounded context for venture-round requests", () => {
+    const message =
+      "I have paying customers and need to raise a first venture round from angels and VCs.";
+    const profile: FounderProfile = {
+      stage: "start",
+      industry: "Software and Information Technology",
+      county: "Salt Lake",
+      community: "Any",
+      goal: message,
+      mode: "chat"
+    };
+    const recommendations: Recommendation[] = [
+      {
+        score: 110,
+        why: "Recommended because it matches funding.",
+        citations: ["resource:vc"],
+        resource: {
+          id: "vc",
+          slug: "vc",
+          title: "Utah SaaS Venture Fund",
+          description: "Venture funding for software companies.",
+          communities: ["Any"],
+          industries: ["Software and Information Technology"],
+          locations: ["Salt Lake"],
+          topics: ["Funding"],
+          stages: ["fund"],
+          link: "https://example.vc",
+          freshness: { status: "seeded" }
+        }
+      }
+    ];
+
+    const context = buildGroundedContext(profile, message, recommendations);
+
+    expect(context).toContain("Founder profile: stage=fund");
+    expect(context).toContain("Funding guidance for this intent");
+    expect(context).not.toContain("Formation guidance for this intent");
+  });
+});
+
+describe("founder profile inference", () => {
+  it("recognizes venture, angel, VC, and raising language as funding intent", () => {
+    expect(
+      inferStageFromText("ready to raise her first venture round with angel groups and VCs", "start")
+    ).toBe("fund");
+  });
 });
 
 function formationResource(id: string, title: string, description: string, link: string): Resource {
@@ -225,6 +329,22 @@ function formationResource(id: string, title: string, description: string, link:
     locations: ["Salt Lake", "Utah"],
     topics: ["Start a Business", "Registration", "EIN", "Bank Account"],
     stages: ["start"],
+    link,
+    freshness: { status: "reviewed" }
+  };
+}
+
+function fundingResource(id: string, title: string, description: string, link: string): Resource {
+  return {
+    id,
+    slug: id,
+    title,
+    description,
+    communities: [],
+    industries: ["Software and Information Technology"],
+    locations: ["Salt Lake", "Utah"],
+    topics: ["Funding"],
+    stages: ["fund"],
     link,
     freshness: { status: "reviewed" }
   };
