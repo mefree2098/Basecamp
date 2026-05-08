@@ -709,7 +709,7 @@ button {
 
 .founder-chat__savebar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   padding: 13px;
   border: 1px solid var(--line);
   border-radius: 8px;
