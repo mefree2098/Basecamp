@@ -18,7 +18,7 @@ const serviceName = process.env.BASECAMP_SERVICE_NAME || "basecamp";
 const steps = [
   ["Fetch latest refs", "git", ["fetch", "origin", "main"]],
   ["Pull latest main", "git", ["pull", "--ff-only", "origin", "main"]],
-  ["Install dependencies", "npm", ["ci"]],
+  ["Install dependencies", "npm", ["ci", "--include=dev"]],
   ["Build production app", "npm", ["run", "build"]],
   ["Restart Basecamp service", "sudo", ["-n", "systemctl", "restart", serviceName]]
 ];
@@ -65,7 +65,8 @@ function run(command, args) {
     cwd,
     env: {
       ...process.env,
-      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_TELEMETRY_DISABLED: "1",
+      npm_config_production: "false"
     },
     encoding: "utf8",
     maxBuffer: 20 * 1024 * 1024
