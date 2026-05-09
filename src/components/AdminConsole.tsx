@@ -20,6 +20,7 @@ import type {
   PublicCompanyImportPreview,
   PublicCompanyImportResult
 } from "@/lib/types";
+import { MapsIntegrationSettings } from "./MapsIntegrationSettings";
 
 export function AdminConsole() {
   const [kind, setKind] = useState<"resources" | "companies">("resources");
@@ -148,11 +149,13 @@ export function AdminConsole() {
         <Link className="stat-card stat-card--link" href="/admin/ai">
           <Bot size={20} aria-hidden="true" />
           <strong>AI</strong>
-          <span>Providers, Codex auth, and integration keys</span>
+          <span>Providers and Codex auth</span>
         </Link>
       </div>
 
       <div className="admin-grid">
+        <MapsIntegrationSettings />
+
         <div className="admin-panel">
           <h2>CSV import</h2>
           <label className="select-field">
@@ -300,7 +303,7 @@ export function AdminConsole() {
             <MapPinned size={17} aria-hidden="true" />
             <div>
               <strong>Maps readiness</strong>
-              <span>Google Maps and integration keys live beside AI settings under Admin.</span>
+              <span>Google Maps API settings are available directly on this admin screen.</span>
             </div>
           </div>
         </div>
