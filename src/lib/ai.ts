@@ -1,8 +1,17 @@
 import { modelFallbacks } from "./site-context";
-import { isFormationIntent, makePlanCards, recommendResources } from "./recommendations";
 import {
+  isCommercializationIntent,
+  isFormationIntent,
+  makePlanCards,
+  recommendResources
+} from "./recommendations";
+import {
+  hasAngelGroupIntent,
   hasFundingIntent,
+  hasIdeaFirstStepIntent,
+  hasInternationalExpansionIntent,
   hasOperatingCompanySignals,
+  hasTechnologyCommercializationIntent,
   hasVentureCapitalIntent,
   inferStageFromText
 } from "./founderInference";
@@ -297,8 +306,20 @@ export function buildGroundedContext(
     isFormationIntent(effectiveProfile)
       ? "Formation guidance for this intent: include the business setup sequence, in order: choose name/entity structure, Utah registration/licensure, EIN/FEIN, business bank account. Keep it simple and cite the matching resources below."
       : "",
+    hasIdeaFirstStepIntent(effectiveProfile.goal)
+      ? "First-step idea guidance for this intent: the founder has an idea or no business yet. Start with idea clarity, mentor/SBDC or get-started support, and validation. Do not route to VC or angel outreach unless the founder explicitly says they are raising a round."
+      : "",
     hasFundingIntent(effectiveProfile.goal)
       ? "Funding guidance for this intent: treat an already-operating company with customers as capital-ready, not formation-stage. Start with investor readiness, target investor/resource fit, pitch materials, warm-introduction or intake paths, and follow-up tracking. Do not route to EIN, bank account, or basic startup setup unless the founder says those are missing."
+      : "",
+    hasAngelGroupIntent(effectiveProfile.goal)
+      ? "Angel guidance for this intent: if supplied angel resources are candidate matches, include at least one angel group before generic venture funds."
+      : "",
+    hasInternationalExpansionIntent(effectiveProfile.goal)
+      ? "International growth guidance for this intent: prioritize export, international trade, World Trade Center, U.S. Commercial Service, and sector-specific growth resources before generic startup mentoring."
+      : "",
+    hasTechnologyCommercializationIntent(effectiveProfile.goal)
+      ? "Research commercialization guidance for this intent: prioritize university entrepreneurship/commercialization, IP ownership, technology validation, and sector-specific advisors before generic entity/EIN/banking steps."
       : "",
     sessionContext ? formatSessionContext(sessionContext) : "",
     formatTrackedPlan(planPreview(effectiveProfile, recommendations), sessionContext),
@@ -327,11 +348,15 @@ function localResponse(
   if (isContinuationTurn(message, sessionContext)) {
     return continuationResponse(settings, effectiveProfile, recommendations, planCards, sessionContext);
   }
+  if (isCommercializationIntent(effectiveProfile)) {
+    return commercializationResponse(settings, effectiveProfile, recommendations, planCards, sessionContext);
+  }
   if (isFormationIntent(effectiveProfile)) {
     const registration =
       findRecommendation(recommendations, "basecamp-startup-state-registration") ?? lead;
     const ein = findRecommendation(recommendations, "basecamp-irs-ein");
     const bank = findRecommendation(recommendations, "basecamp-sba-business-bank-account");
+    const specialty = findSpecializedFormationRecommendation(effectiveProfile, recommendations);
     const first = registration ?? lead;
     const activeStep = nextActivePlanCard(planCards, sessionContext?.completedSteps);
     const steps = [
@@ -342,7 +367,9 @@ function localResponse(
       first
         ? `1. Today: pick a working business name and entity structure, then use ${first.resource.title} at ${first.resource.link} to check Utah registration and licensing. [resource:${first.resource.id}]`
         : "1. Today: pick a working business name and entity structure.",
-      "2. Do not skip ahead yet; the EIN, banking, taxes, and funding items stay queued until the formation details are ready.",
+      specialty
+        ? `2. Because of your ${formationContextLabel(effectiveProfile)} context, queue ${specialty.resource.title} at ${specialty.resource.link} as the support resource right after the formation basics are clear. [resource:${specialty.resource.id}]`
+        : "2. Do not skip ahead yet; the EIN, banking, taxes, and funding items stay queued until the formation details are ready.",
       [
         ein && bank
           ? `3. When this active step is done, I will move you to ${ein.resource.title} and then ${bank.resource.title}. [resource:${ein.resource.id}] [resource:${bank.resource.id}]`
@@ -396,11 +423,75 @@ function localResponse(
   };
 }
 
+function commercializationResponse(
+  settings: AiSettings,
+  profile: FounderProfile,
+  recommendations: ReturnType<typeof recommendResources>,
+  planCards: ReturnType<typeof makePlanCards>,
+  sessionContext?: SessionContext
+): WizardResponse {
+  const lead = recommendations[0];
+  const activeStep =
+    nextActivePlanCard(planCards, sessionContext?.completedSteps)?.title ??
+    "map the research commercialization path";
+  const secondary = recommendations.slice(1, 3);
+  const assistantMessage = [
+    `I created a commercialization plan. Active step: ${activeStep}.`,
+    formatPlanStatus(planCards, sessionContext?.completedSteps),
+    "1. Today: write down the invention, current lab or university ownership context, patent/IP questions, target customer, and what proof exists outside the lab.",
+    lead
+      ? `2. Start with ${lead.resource.title} at ${lead.resource.link}; use it to find the right entrepreneurship, commercialization, mentor, or intake path before forming the company. [resource:${lead.resource.id}]`
+      : "2. Start with the University of Utah or Startup State commercialization resource that can confirm the IP and advisor path before entity setup.",
+    secondary.length
+      ? `3. Compare ${secondary
+          .map((item) => `${item.resource.title} [resource:${item.resource.id}]`)
+          .join(" and ")} for the next advisor or validation step.`
+      : "3. After that, move to formation, EIN, and banking only once the IP and customer path are clear.",
+    "Tell me what resource or intake form you choose, and I will help you advance the plan one step at a time."
+  ].join("\n\n");
+
+  return {
+    assistantMessage,
+    recommendations,
+    planCards,
+    usedProvider: settings.provider || "mock",
+    guardrails: {
+      deterministicFilters: true,
+      citationsRequired: true,
+      externalBrowsingUsed: false
+    }
+  };
+}
+
 function findRecommendation(
   recommendations: ReturnType<typeof recommendResources>,
   id: string
 ) {
   return recommendations.find((item) => item.resource.id === id);
+}
+
+function findSpecializedFormationRecommendation(
+  profile: FounderProfile,
+  recommendations: ReturnType<typeof recommendResources>
+) {
+  const text = profile.goal.toLowerCase();
+  if (/veteran|military/.test(text)) {
+    return recommendations.find((item) =>
+      /veteran|vbrc|strive/i.test(
+        `${item.resource.title} ${item.resource.description} ${item.resource.link}`
+      )
+    );
+  }
+  return undefined;
+}
+
+function formationContextLabel(profile: FounderProfile) {
+  const text = profile.goal.toLowerCase();
+  if (/veteran|military/.test(text) && /manufactur|fabrication|machining|custom fab/.test(text)) {
+    return "veteran manufacturing";
+  }
+  if (/veteran|military/.test(text)) return "veteran";
+  return "founder";
 }
 
 function fundingResponse(

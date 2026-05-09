@@ -26,8 +26,15 @@ export function inferFounderProfileFromText(
 export function inferStageFromText(input: string, fallback: FounderStage): FounderStage {
   const text = input.toLowerCase();
   if (/\b(exit|sell|succession|close|closing)\b/.test(text)) return "exit";
+  if (hasTechnologyCommercializationIntent(text)) return "validate";
+  if (hasIdeaFirstStepIntent(text)) return "idea";
   if (hasFundingIntent(text)) return "fund";
-  if (/\b(grow|growth|hire|hiring|export|scale|scaling|workforce)\b/.test(text)) return "grow";
+  if (
+    hasInternationalExpansionIntent(text) ||
+    /\b(grow|growth|hire|hiring|export|scale|scaling|workforce)\b/.test(text)
+  ) {
+    return "grow";
+  }
   if (/\b(validate|pre[-\s]?revenue|mvp|prototype|test customers?|market research)\b/.test(text)) {
     return "validate";
   }
@@ -36,14 +43,58 @@ export function inferStageFromText(input: string, fallback: FounderStage): Found
   return fallback;
 }
 
-export function hasFundingIntent(input: string) {
-  return /\b(fund|funding|grant|loan|capital|investors?|investment|pitch|raise|raising|raised|round|venture|vcs?|angels?|seed|pre[-\s]?seed|series\s+[abc]|term sheet|runway)\b/i.test(
+export function hasIdeaFirstStepIntent(input: string) {
+  return /\b(pre[-\s]?revenue|no business|not.*business|first steps|take (?:his|her|my|our|their) first steps|never started|has never started|exploring options?)\b/i.test(
     input
   );
 }
 
+export function hasFundingIntent(input: string) {
+  const text = input.toLowerCase();
+  if (
+    /\b(fund|funding|grant|loan|capital|investors?|investment|pitch|raise|raising|raised|round|venture|vcs?|angels?|series\s+[abc]|term sheet|runway)\b/i.test(
+      text
+    )
+  ) {
+    return true;
+  }
+  return (
+    /\b(seed|pre[-\s]?seed)\b/i.test(text) &&
+    /\b(raise|raising|round|investors?|investment|capital|funding|venture|vcs?|angels?|term sheet|runway)\b/i.test(
+      text
+    )
+  );
+}
+
 export function hasVentureCapitalIntent(input: string) {
-  return /\b(venture|vcs?|angels?|investors?|investment|raise|raising|raised|round|seed|pre[-\s]?seed|series\s+[abc]|term sheet|equity)\b/i.test(
+  const text = input.toLowerCase();
+  if (
+    /\b(venture|vcs?|angels?|investors?|investment|raise|raising|raised|round|series\s+[abc]|term sheet|equity)\b/i.test(
+      text
+    )
+  ) {
+    return true;
+  }
+  return (
+    /\b(seed|pre[-\s]?seed)\b/i.test(text) &&
+    /\b(raise|raising|round|investors?|investment|capital|funding|venture|vcs?|angels?|term sheet|equity)\b/i.test(
+      text
+    )
+  );
+}
+
+export function hasAngelGroupIntent(input: string) {
+  return /\b(angel|angels|angel groups?|angel investors?)\b/i.test(input);
+}
+
+export function hasInternationalExpansionIntent(input: string) {
+  return /\b(international|export|exports|exporting|global markets?|foreign markets?|overseas|worldwide|trade)\b/i.test(
+    input
+  );
+}
+
+export function hasTechnologyCommercializationIntent(input: string) {
+  return /\b(phd|doctoral|research|researcher|university|commerciali[sz]e|commerciali[sz]ation|technology transfer|tech transfer|novel technology|lab|ip|intellectual property|patent)\b/i.test(
     input
   );
 }
@@ -54,13 +105,29 @@ export function hasOperatingCompanySignals(input: string) {
   );
 }
 
+export function detectedFounderCommunities(input: string, allowed: string[] = []) {
+  const text = input.toLowerCase();
+  const candidates: Array<[RegExp, string]> = [
+    [/\b(woman|women|female|woman-owned|her first|she\/her)\b/, "Women"],
+    [/\b(veteran|military)\b/, "Veteran"],
+    [/\b(student|college|university|phd|doctoral)\b/, "Student"],
+    [/\b(rural|small town)\b/, "Rural"],
+    [/\b(immigrant|refugee|new american)\b/, "New American"],
+    [/\b(multicultural|minority|asian|latino|hispanic|pacific islander|black)\b/, "Multicultural"]
+  ];
+  const allowedSet = new Set(allowed);
+  return candidates
+    .filter(([pattern, community]) => pattern.test(text) && (!allowed.length || allowedSet.has(community)))
+    .map(([, community]) => community);
+}
+
 function inferIndustryFromText(text: string, fallback: string, industries: string[]) {
   const candidates: Array<[RegExp, string]> = [
     [/\b(software|saas|app|ai|tech|platform|developer)\b/, "Software and Information Technology"],
     [/\b(landscap|lawn|yard|farm|agricultur|ranch|garden)\b/, "Agriculture"],
     [/\b(food|restaurant|cafe|catering|truck|hotel|tourism|hospitality)\b/, "Hospitality and Food Services"],
     [/\b(health|clinic|medical|device|biotech|life science)\b/, "Life Sciences and Healthcare"],
-    [/\b(manufactur|factory|industrial|hardware|machining)\b/, "Manufacturing"],
+    [/\b(manufactur|factory|industrial|hardware|machining|fabrication|fabricator|metalwork)\b/, "Manufacturing"],
     [/\b(film|music|artist|studio|game|entertainment|recreation)\b/, "Arts and Entertainment and Recreation"],
     [/\b(finance|bank|insurance|fintech)\b/, "Financial Services"],
     [/\b(retail|ecommerce|consumer product|packaged|cpg)\b/, "Consumer Packaged Goods"]
@@ -93,13 +160,5 @@ function inferCountyFromText(text: string, fallback: string, counties: string[])
 }
 
 function inferCommunityFromText(text: string, fallback: string, communities: string[]) {
-  const candidates: Array<[RegExp, string]> = [
-    [/\b(woman|women|female|woman-owned|her first|she\/her)\b/, "Women"],
-    [/\b(veteran|military)\b/, "Veteran"],
-    [/\b(student|college|university)\b/, "Student"],
-    [/\b(rural|small town)\b/, "Rural"],
-    [/\b(immigrant|refugee|new american)\b/, "New American"],
-    [/\b(multicultural|minority|asian|latino|hispanic|pacific islander|black)\b/, "Multicultural"]
-  ];
-  return candidates.find(([pattern, community]) => pattern.test(text) && communities.includes(community))?.[1] ?? fallback;
+  return detectedFounderCommunities(text, communities)[0] ?? fallback;
 }

@@ -6,6 +6,7 @@ import {
   orderRecommendationsByCitations,
   runWizardTurn
 } from "@/lib/ai";
+import { loadResources, resetDataCachesForTests } from "@/lib/data";
 import { inferStageFromText } from "@/lib/founderInference";
 import type { FounderProfile, Recommendation, Resource } from "@/lib/types";
 
@@ -316,6 +317,65 @@ describe("founder profile inference", () => {
       inferStageFromText("ready to raise her first venture round with angel groups and VCs", "start")
     ).toBe("fund");
   });
+
+  it("keeps pre-seed idea/no-business language in first-step mode", () => {
+    expect(
+      inferStageFromText(
+        "Pre-seed founder with an idea but no business yet, looking for resources to take his first steps.",
+        "start"
+      )
+    ).toBe("idea");
+  });
+});
+
+describe("required Startup State persona routing", () => {
+  it("serves all six judging personas with distinct grounded resource paths", async () => {
+    resetDataCachesForTests();
+    const resources = loadResources();
+    const results = await Promise.all(
+      requiredPersonas.map(async (persona) => ({
+        persona,
+        response: await runWizardTurn({
+          settings: { provider: "mock", model: "basecamp-local-guide", thinkingLevel: "medium" },
+          profile: { ...persona.profile, goal: persona.message },
+          message: persona.message,
+          resources
+        })
+      }))
+    );
+
+    const byId = new Map(results.map((result) => [result.persona.id, result.response]));
+
+    const jordan = byId.get("Jordan")!;
+    expect(jordan.assistantMessage).not.toContain("capital-readiness plan");
+    expect(jordan.planCards[0]?.title).toContain("Clarify the problem");
+    expect(topTitles(jordan)).toEqual(expect.arrayContaining(["Utah SBDC free consultation"]));
+    expect(topTitles(jordan).join(" ")).not.toMatch(/Ventures|Venture|Angels/);
+
+    const maria = byId.get("Maria")!;
+    expect(topTitles(maria).join(" ")).toMatch(/Agriculture|Utah's Own|Utah Tech|Atwood|Rural Utah Chamber/);
+    expect(topResourceText(maria)).toMatch(/Agriculture|Rural|Washington|Women|St George|Utah Tech/);
+
+    const marcus = byId.get("Marcus")!;
+    expect(marcus.assistantMessage).toMatch(/veteran/i);
+    expect(topTitles(marcus).join(" ")).toMatch(/Veteran|VBRC|STRIVE/);
+    expect(topTitles(marcus).join(" ")).not.toMatch(/Washington Area Chamber/);
+
+    const priya = byId.get("Priya")!;
+    expect(priya.assistantMessage).toContain("capital-readiness plan");
+    expect(topTitles(priya).join(" ")).toMatch(/Angels|Startup Ignition|Kickstart|Grix|Peterson/);
+    expect(topTitles(priya).join(" ")).toMatch(/Angels/);
+    expect(priya.assistantMessage).not.toContain("business bank account");
+
+    const david = byId.get("David")!;
+    expect(david.planCards[0]?.title).toContain("export readiness");
+    expect(topTitles(david).slice(0, 3).join(" ")).toMatch(/World Trade Center/);
+    expect(topTitles(david).slice(0, 5).join(" ")).toMatch(/Commercial Service/);
+
+    const amir = byId.get("Amir")!;
+    expect(amir.assistantMessage).toContain("commercialization plan");
+    expect(topTitles(amir).join(" ")).toMatch(/Lassonde|University of Utah|Innovation Fund|Altitude/);
+  });
 });
 
 function formationResource(id: string, title: string, description: string, link: string): Resource {
@@ -348,4 +408,108 @@ function fundingResource(id: string, title: string, description: string, link: s
     link,
     freshness: { status: "reviewed" }
   };
+}
+
+const requiredPersonas: Array<{
+  id: string;
+  message: string;
+  profile: FounderProfile;
+}> = [
+  {
+    id: "Jordan",
+    message:
+      "Jordan is 20 in Salt Lake City. He is a pre-seed founder with an idea but no business yet, looking for resources to take his first steps.",
+    profile: {
+      stage: "idea",
+      industry: "Software and Information Technology",
+      county: "Salt Lake",
+      community: "Any",
+      goal: "",
+      mode: "chat"
+    }
+  },
+  {
+    id: "Maria",
+    message:
+      "Maria is 38 in Washington County near St. George. She runs a small agricultural operation, is rural and woman-owned, and is looking to scale.",
+    profile: {
+      stage: "grow",
+      industry: "Agriculture",
+      county: "Washington",
+      community: "Women",
+      goal: "",
+      mode: "chat"
+    }
+  },
+  {
+    id: "Marcus",
+    message:
+      "Marcus is 34 in Ogden in Weber County. He left the military and is starting a custom fabrication and manufacturing business. He is a veteran and early-stage.",
+    profile: {
+      stage: "start",
+      industry: "Manufacturing",
+      county: "Weber",
+      community: "Veteran",
+      goal: "",
+      mode: "chat"
+    }
+  },
+  {
+    id: "Priya",
+    message:
+      "Priya is 31 in Salt Lake City. She is a B2B SaaS founder, 18 months in with paying customers, ready to raise her first venture round. She is specifically looking for angel groups and VCs.",
+    profile: {
+      stage: "fund",
+      industry: "Software and Information Technology",
+      county: "Salt Lake",
+      community: "Any",
+      goal: "",
+      mode: "chat"
+    }
+  },
+  {
+    id: "David",
+    message:
+      "David is 45 in Provo in Utah County. He runs a medical device company with 12 employees and FDA clearance, and he wants to expand into international markets. He is growth stage and established.",
+    profile: {
+      stage: "grow",
+      industry: "Life Sciences and Healthcare",
+      county: "Utah",
+      community: "Any",
+      goal: "",
+      mode: "chat"
+    }
+  },
+  {
+    id: "Amir",
+    message:
+      "Dr. Amir is 29 in Salt Lake City. He is a PhD candidate at the University of Utah developing a novel technology. He wants to commercialize his research and found a company, and he has never started a business before.",
+    profile: {
+      stage: "start",
+      industry: "Software and Information Technology",
+      county: "Salt Lake",
+      community: "Student",
+      goal: "",
+      mode: "chat"
+    }
+  }
+];
+
+function topTitles(response: Awaited<ReturnType<typeof runWizardTurn>>) {
+  return response.recommendations.slice(0, 7).map((item) => item.resource.title);
+}
+
+function topResourceText(response: Awaited<ReturnType<typeof runWizardTurn>>) {
+  return response.recommendations
+    .slice(0, 7)
+    .map((item) =>
+      [
+        item.resource.title,
+        item.resource.description,
+        ...item.resource.communities,
+        ...item.resource.locations,
+        ...item.resource.industries
+      ].join(" ")
+    )
+    .join(" ");
 }

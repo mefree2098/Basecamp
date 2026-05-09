@@ -12,4 +12,11 @@ describe("bundled data seeds", () => {
     expect(publicBusinesses).toHaveLength(696);
     expect(companies.length).toBeGreaterThan(900);
   });
+
+  it("includes the full official startup map seed", () => {
+    resetDataCachesForTests();
+    const companies = loadCompanies();
+
+    expect(companies.some((company) => company.name === "OgdenXR")).toBe(true);
+  });
 });
