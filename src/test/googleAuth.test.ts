@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createGoogleOAuthRequest,
+  googleOAuthAppUrl,
   googleOAuthConfigStatus,
   googleOAuthRedirectUri,
   verifyGoogleOAuthState
@@ -90,6 +91,12 @@ describe("Google OAuth helpers", () => {
 
     expect(googleOAuthRedirectUri("https://preview.example/api/auth/google/start")).toBe(
       "https://preview.example/api/auth/google/callback"
+    );
+  });
+
+  it("builds post-auth redirects from the configured public URL", () => {
+    expect(googleOAuthAppUrl("/profile?auth=google_error", "https://localhost:4302/api/auth/google/callback").href).toBe(
+      "https://basecamp.example/profile?auth=google_error"
     );
   });
 });

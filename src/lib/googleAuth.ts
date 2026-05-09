@@ -38,6 +38,20 @@ type GoogleUserInfoResponse = {
   picture?: string;
 };
 
+export class GoogleOAuthError extends Error {
+  status?: number;
+  code?: string;
+  description?: string;
+
+  constructor(message: string, options?: { status?: number; code?: string; description?: string }) {
+    super(message);
+    this.name = "GoogleOAuthError";
+    this.status = options?.status;
+    this.code = options?.code;
+    this.description = options?.description;
+  }
+}
+
 export type GoogleFounderProfile = {
   googleId: string;
   email: string;
@@ -96,6 +110,10 @@ export function verifyGoogleOAuthState(state: string | null | undefined, nonce: 
   };
 }
 
+export function googleOAuthAppUrl(path: string, requestUrl: string) {
+  return new URL(path, publicBaseUrl(requestUrl));
+}
+
 export async function exchangeGoogleCodeForProfile({
   code,
   requestUrl
@@ -116,7 +134,14 @@ export async function exchangeGoogleCodeForProfile({
   });
   const tokenPayload = (await readJson(tokenResponse)) as GoogleTokenResponse | { error?: string };
   if (!tokenResponse.ok || !("access_token" in tokenPayload) || !tokenPayload.access_token) {
-    throw new Error("Google token exchange failed.");
+    throw new GoogleOAuthError("Google token exchange failed.", {
+      status: tokenResponse.status,
+      code: "error" in tokenPayload ? tokenPayload.error : undefined,
+      description:
+        "error_description" in tokenPayload && typeof tokenPayload.error_description === "string"
+          ? tokenPayload.error_description
+          : undefined
+    });
   }
 
   const userInfoResponse = await fetch(GOOGLE_USERINFO_URL, {
@@ -125,7 +150,9 @@ export async function exchangeGoogleCodeForProfile({
   });
   const profile = (await readJson(userInfoResponse)) as GoogleUserInfoResponse;
   if (!userInfoResponse.ok || !profile.sub || !profile.email || !profile.email_verified) {
-    throw new Error("Google did not return a verified email profile.");
+    throw new GoogleOAuthError("Google did not return a verified email profile.", {
+      status: userInfoResponse.status
+    });
   }
 
   return {
@@ -133,6 +160,20 @@ export async function exchangeGoogleCodeForProfile({
     email: profile.email,
     name: profile.name?.trim() || fallbackNameFromEmail(profile.email),
     avatarUrl: profile.picture
+  };
+}
+
+export function googleOAuthErrorSummary(error: unknown) {
+  if (error instanceof GoogleOAuthError) {
+    return {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+      description: error.description
+    };
+  }
+  return {
+    message: error instanceof Error ? error.message : "Google OAuth failed."
   };
 }
 

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import {
   BASECAMP_GOOGLE_OAUTH_STATE_COOKIE,
   exchangeGoogleCodeForProfile,
+  googleOAuthAppUrl,
+  googleOAuthErrorSummary,
   verifyGoogleOAuthState
 } from "@/lib/googleAuth";
 import {
@@ -17,7 +19,7 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const nonce = cookieValue(request.headers.get("cookie"), BASECAMP_GOOGLE_OAUTH_STATE_COOKIE);
-  const fallbackRedirect = new URL("/profile?auth=google_error", request.url);
+  const fallbackRedirect = googleOAuthAppUrl("/profile?auth=google_error", request.url);
 
   try {
     if (!code) throw new Error("Google did not return an authorization code.");
@@ -30,7 +32,7 @@ export async function GET(request: Request) {
       avatarUrl: profile.avatarUrl
     });
     const { token, expiresAt } = createFounderAuthSession(user.id);
-    const response = NextResponse.redirect(new URL(verifiedState.returnTo, request.url));
+    const response = NextResponse.redirect(googleOAuthAppUrl(verifiedState.returnTo, request.url));
     response.cookies.set(BASECAMP_AUTH_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
@@ -40,7 +42,8 @@ export async function GET(request: Request) {
     });
     clearGoogleStateCookie(response);
     return response;
-  } catch {
+  } catch (error) {
+    console.warn("Google OAuth callback failed", googleOAuthErrorSummary(error));
     const response = NextResponse.redirect(fallbackRedirect);
     clearGoogleStateCookie(response);
     return response;
