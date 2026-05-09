@@ -33,7 +33,9 @@ const STORAGE_DIR = path.resolve(
   process.cwd(),
   process.env.BASECAMP_STORAGE_DIR ?? ".basecamp-data"
 );
+const DATA_DIR = path.resolve(process.cwd(), process.env.BASECAMP_DATA_DIR ?? "data");
 const GEOCODE_CACHE_PATH = path.join(STORAGE_DIR, "google-geocodes.server.json");
+const BUNDLED_GEOCODE_CACHE_PATH = path.join(DATA_DIR, "google-geocodes.server.json");
 
 export async function ensureServerGeocodes(companies: Company[]) {
   const cache = loadCache();
@@ -134,12 +136,10 @@ async function geocodeAddress(address: string, key: string) {
 }
 
 function loadCache() {
-  try {
-    if (!fs.existsSync(GEOCODE_CACHE_PATH)) return {};
-    return JSON.parse(fs.readFileSync(GEOCODE_CACHE_PATH, "utf8")) as Record<string, CachedGeocode>;
-  } catch {
-    return {};
-  }
+  return {
+    ...readCacheFile(BUNDLED_GEOCODE_CACHE_PATH),
+    ...readCacheFile(GEOCODE_CACHE_PATH)
+  };
 }
 
 function saveCache(cache: Record<string, CachedGeocode>) {
@@ -170,4 +170,13 @@ function geocodeCacheKey(company: Company) {
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function readCacheFile(filePath: string) {
+  try {
+    if (!fs.existsSync(filePath)) return {} as Record<string, CachedGeocode>;
+    return JSON.parse(fs.readFileSync(filePath, "utf8")) as Record<string, CachedGeocode>;
+  } catch {
+    return {} as Record<string, CachedGeocode>;
+  }
 }

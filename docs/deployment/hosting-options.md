@@ -19,6 +19,7 @@ Use this when hosting on the shared NVIDIA Jetson behind HomeBrain's Caddy rever
 - Set `BASECAMP_PUBLIC_URL=https://basecamp.ntechr.com`.
 - Store writable data at `/mnt/nvme/apps/Basecamp/.basecamp-data`.
 - Use `/api/healthz` as the HomeBrain reverse proxy health path.
+- Configure `BASECAMP_CODEX_TOKEN` to enable the confirmation-gated live-control API.
 
 See [Jetson Orin Nano Deployment](./jetson-orin-nano.md).
 

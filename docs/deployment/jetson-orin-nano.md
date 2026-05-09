@@ -9,6 +9,7 @@ Basecamp can run on the shared Jetson as a small production Next.js service behi
 - Public hostname: `https://basecamp.ntechr.com`
 - Reverse proxy health path: `/api/healthz`
 - Persistent storage: `/mnt/nvme/apps/Basecamp/.basecamp-data`
+- Codex live-control API: `/api/codex/live/*`
 
 The app has no resident database. It reads seed data from `data/` and writes runtime sessions, uploads, admin overrides, geocode cache, icon cache, and optional Codex auth state under `BASECAMP_STORAGE_DIR`.
 
@@ -27,6 +28,14 @@ mkdir -p .basecamp-data
 ```
 
 Edit `.env.production` and add any Google Maps, SMTP, hosted AI, or Codex settings you want enabled. The defaults keep cache workers conservative for a Jetson that is already running HomeBrain and Axiom.
+
+Set `BASECAMP_CODEX_TOKEN` before enabling live control:
+
+```bash
+sed -i "s/^BASECAMP_CODEX_TOKEN=.*/BASECAMP_CODEX_TOKEN=$(openssl rand -hex 32)/" .env.production
+```
+
+`npm run build` automatically copies `public/` and `.next/static/` into `.next/standalone/` so the systemd service can load the full app shell and client bundles.
 
 ## systemd Service
 
@@ -58,6 +67,33 @@ After applying the Caddy config:
 ```bash
 curl -fsS https://basecamp.ntechr.com/api/healthz
 curl -I https://basecamp.ntechr.com/
+```
+
+## Codex Live Skill
+
+The repo includes a Basecamp live skill at `codex/skills/basecamp-live`. Install or sync it into `~/.codex/skills/basecamp-live`, then configure the local helper:
+
+```bash
+cat > ~/.codex/basecamp-live.json <<'JSON'
+{
+  "url": "https://basecamp.ntechr.com",
+  "token": "paste BASECAMP_CODEX_TOKEN here"
+}
+JSON
+```
+
+Smoke test from your workstation:
+
+```bash
+node ~/.codex/skills/basecamp-live/scripts/basecamp-live.js overview
+node ~/.codex/skills/basecamp-live/scripts/basecamp-live.js logs --lines 120
+```
+
+Deploys are intentionally confirmation-gated:
+
+```bash
+node ~/.codex/skills/basecamp-live/scripts/basecamp-live.js deploy-run --confirm deploy
+node ~/.codex/skills/basecamp-live/scripts/basecamp-live.js deploy-status
 ```
 
 ## Shared-Host Notes

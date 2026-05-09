@@ -27,7 +27,9 @@ const STORAGE_DIR = path.resolve(
   process.cwd(),
   process.env.BASECAMP_STORAGE_DIR ?? ".basecamp-data"
 );
+const DATA_DIR = path.resolve(process.cwd(), process.env.BASECAMP_DATA_DIR ?? "data");
 const ICON_CACHE_PATH = path.join(STORAGE_DIR, "company-icons.server.json");
+const BUNDLED_ICON_CACHE_PATH = path.join(DATA_DIR, "company-icons.server.json");
 const DEFAULT_BATCH_SIZE = 32;
 const DEFAULT_CONCURRENCY = 10;
 const REQUEST_TIMEOUT_MS = 3500;
@@ -276,12 +278,10 @@ async function mapWithConcurrency<T>(
 }
 
 function loadCache() {
-  try {
-    if (!fs.existsSync(ICON_CACHE_PATH)) return {};
-    return JSON.parse(fs.readFileSync(ICON_CACHE_PATH, "utf8")) as Record<string, CachedCompanyIcon>;
-  } catch {
-    return {};
-  }
+  return {
+    ...readCacheFile(BUNDLED_ICON_CACHE_PATH),
+    ...readCacheFile(ICON_CACHE_PATH)
+  };
 }
 
 function saveCache(cache: Record<string, CachedCompanyIcon>) {
@@ -361,4 +361,13 @@ function isPrivateIpv4(value: string) {
 function envNumber(name: string, fallback: number) {
   const value = Number(process.env[name] ?? "");
   return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function readCacheFile(filePath: string) {
+  try {
+    if (!fs.existsSync(filePath)) return {} as Record<string, CachedCompanyIcon>;
+    return JSON.parse(fs.readFileSync(filePath, "utf8")) as Record<string, CachedCompanyIcon>;
+  } catch {
+    return {} as Record<string, CachedCompanyIcon>;
+  }
 }

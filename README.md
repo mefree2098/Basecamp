@@ -104,4 +104,6 @@ Azure Container Apps or Azure App Service for Containers is the likely first tar
 
 For the shared NVIDIA Jetson Orin Nano Super host behind HomeBrain's Caddy reverse proxy, use `PORT=4302`, `HOSTNAME=127.0.0.1`, and `https://basecamp.ntechr.com`; see [docs/deployment/jetson-orin-nano.md](./docs/deployment/jetson-orin-nano.md).
 
+The repo also includes the non-secret imported Utah public-business seed data and server-side map/icon caches under `data/`, so a fresh Jetson checkout starts with the same public map dataset as the local build.
+
 See [docs/deployment/hosting-options.md](./docs/deployment/hosting-options.md).

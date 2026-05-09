@@ -318,11 +318,11 @@ function parseCsvText<T>(content: string): T[] {
 }
 
 function mergeResourceOverrides(resources: Resource[]) {
-  const overridePath = path.join(STORAGE_DIR, "resources.override.json");
-  if (!fs.existsSync(overridePath)) {
-    return resources;
-  }
-  const overrides = JSON.parse(fs.readFileSync(overridePath, "utf8")) as Array<Partial<Resource>>;
+  const overrides = uniqueOverrideRows(
+    readOverrideRows<Partial<Resource>>("resources.override.json"),
+    (row) => row.id ?? row.slug ?? row.title ?? ""
+  );
+  if (overrides.length === 0) return resources;
   const imported = overrides
     .filter((row) => row.title)
     .map((row) => {
@@ -350,11 +350,11 @@ function mergeResourceOverrides(resources: Resource[]) {
 }
 
 function mergeCompanyOverrides(companies: Company[]) {
-  const overridePath = path.join(STORAGE_DIR, "companies.override.json");
-  if (!fs.existsSync(overridePath)) {
-    return companies;
-  }
-  const overrides = JSON.parse(fs.readFileSync(overridePath, "utf8")) as Array<Partial<Company>>;
+  const overrides = uniqueOverrideRows(
+    readOverrideRows<Partial<Company>>("companies.override.json"),
+    (row) => row.slug ?? row.name ?? ""
+  );
+  if (overrides.length === 0) return companies;
   const imported = overrides
     .filter((row) => row.name)
     .map((row) => {
@@ -384,6 +384,34 @@ function mergeCompanyOverrides(companies: Company[]) {
       } satisfies Company;
     });
   return [...imported, ...companies];
+}
+
+function readOverrideRows<T>(filename: string) {
+  return [
+    ...readJsonArray<T>(path.join(STORAGE_DIR, filename)),
+    ...readJsonArray<T>(path.join(DATA_DIR, filename))
+  ];
+}
+
+function readJsonArray<T>(filePath: string) {
+  try {
+    if (!fs.existsSync(filePath)) return [] as T[];
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [] as T[];
+  }
+}
+
+function uniqueOverrideRows<T>(rows: T[], keyFor: (row: T) => string) {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const key = keyFor(row).toLowerCase().trim();
+    if (!key) return true;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function foundationalStartupResources(): Resource[] {

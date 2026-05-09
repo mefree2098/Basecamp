@@ -5,6 +5,12 @@ import nextTypescript from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTypescript,
+  {
+    files: ["scripts/*.js", "codex/skills/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off"
+    }
+  },
   globalIgnores([
     ".next/**",
     "out/**",

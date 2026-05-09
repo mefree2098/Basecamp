@@ -1,0 +1,1678 @@
+{
+  "alcomy|815 west 1250 south, orem, ut": {
+    "status": "ok",
+    "lat": 40.27366079999999,
+    "lng": -111.7153996,
+    "confidence": "google",
+    "formattedAddress": "815 W 1250 S, Orem, UT 84058, USA",
+    "fetchedAt": "2026-05-08T16:30:02.461Z"
+  },
+  "alphamountain|1557 west innovation way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4307726,
+    "lng": -111.8745553,
+    "confidence": "google",
+    "formattedAddress": "1557 W Innovation Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:02.655Z"
+  },
+  "altitude ai|215 south state street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7644811,
+    "lng": -111.8879169,
+    "confidence": "google",
+    "formattedAddress": "215 S State St, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:02.866Z"
+  },
+  "alysio|1637 east harrison avenue, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.73974219999999,
+    "lng": -111.8438202,
+    "confidence": "google",
+    "formattedAddress": "1637 E Harrison Ave, Salt Lake City, UT 84105, USA",
+    "fetchedAt": "2026-05-08T16:30:03.077Z"
+  },
+  "bracket labs|2901 west bluegrass boulevard, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4352434,
+    "lng": -111.8959273,
+    "confidence": "google",
+    "formattedAddress": "2901 Bluegrass Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:03.349Z"
+  },
+  "crew|2000 ashton boulevard, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4212533,
+    "lng": -111.8830231,
+    "confidence": "google",
+    "formattedAddress": "2000 W Ashton Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:03.583Z"
+  },
+  "data quality co-op|salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7605601,
+    "lng": -111.8881397,
+    "confidence": "google",
+    "formattedAddress": "Salt Lake City, UT, USA",
+    "fetchedAt": "2026-05-08T16:30:03.737Z"
+  },
+  "deeppower|1633 west innovation way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4305894,
+    "lng": -111.8757027,
+    "confidence": "google",
+    "formattedAddress": "1633 W Innovation Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:03.925Z"
+  },
+  "domus diagnostics|1445 settlement drive, park city, ut": {
+    "status": "ok",
+    "lat": 40.6943537,
+    "lng": -111.5395282,
+    "confidence": "google",
+    "formattedAddress": "1445 Settlement Dr, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:04.095Z"
+  },
+  "dónde|26 rio grand street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7687816,
+    "lng": -111.9044144,
+    "confidence": "google",
+    "formattedAddress": "26 S Rio Grande St, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:04.320Z"
+  },
+  "dorai|1171 west 2400 south, west valley city, ut": {
+    "status": "ok",
+    "lat": 40.7187322,
+    "lng": -111.9263341,
+    "confidence": "google",
+    "formattedAddress": "1171 W 2400 S, West Valley City, UT 84119, USA",
+    "fetchedAt": "2026-05-08T16:30:04.552Z"
+  },
+  "dree|139 hunter's grove lane, lehi, ut": {
+    "status": "ok",
+    "lat": 40.3906807,
+    "lng": -111.8277148,
+    "confidence": "google",
+    "formattedAddress": "139 Hunter's Grv Ln, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:04.715Z"
+  },
+  "driven|1355 south 960 east, heber city, ut": {
+    "status": "ok",
+    "lat": 40.4908831,
+    "lng": -111.3980815,
+    "confidence": "google",
+    "formattedAddress": "1355 S 960 E, Heber City, UT 84032, USA",
+    "fetchedAt": "2026-05-08T16:30:04.901Z"
+  },
+  "eaglecorps|350 east 400 south, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.760409,
+    "lng": -111.881027,
+    "confidence": "google",
+    "formattedAddress": "350 E 400 S, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:05.130Z"
+  },
+  "ednition|18 west 1900 south, kaysville, ut": {
+    "status": "ok",
+    "lat": 41.0041249,
+    "lng": -111.9380008,
+    "confidence": "google",
+    "formattedAddress": "18 W 1900 S, Kaysville, UT 84037, USA",
+    "fetchedAt": "2026-05-08T16:30:05.318Z"
+  },
+  "errand|815 west 1250 south, orem, ut": {
+    "status": "ok",
+    "lat": 40.27366079999999,
+    "lng": -111.7153996,
+    "confidence": "google",
+    "formattedAddress": "815 W 1250 S, Orem, UT 84058, USA",
+    "fetchedAt": "2026-05-08T16:30:05.391Z"
+  },
+  "giddy|13894 south bangerter parkway, draper, ut": {
+    "status": "ok",
+    "lat": 40.4990052,
+    "lng": -111.8854664,
+    "confidence": "google",
+    "formattedAddress": "13894 S Bangerter Pkwy, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:05.578Z"
+  },
+  "inherent biosciences|26 south rio grande street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7687816,
+    "lng": -111.9044144,
+    "confidence": "google",
+    "formattedAddress": "26 S Rio Grande St, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:05.811Z"
+  },
+  "jipe|1053 blackstone drive, fruit heights, ut": {
+    "status": "ok",
+    "lat": 41.0172355,
+    "lng": -111.9101393,
+    "confidence": "google",
+    "formattedAddress": "1053 Blackstone Dr, Fruit Heights, UT 84037, USA",
+    "fetchedAt": "2026-05-08T16:30:05.967Z"
+  },
+  "veras|3400 north ashton boulevard, lehi, ut": {
+    "status": "ok",
+    "lat": 40.42974,
+    "lng": -111.8941264,
+    "confidence": "google",
+    "formattedAddress": "3400 N Ashton Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:06.150Z"
+  },
+  "ketonatural pet foods|181 e edith ave, salt lake city, utah, 84111": {
+    "status": "ok",
+    "lat": 40.7430976,
+    "lng": -111.8855753,
+    "confidence": "google",
+    "formattedAddress": "181 Edith Ave S, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:06.330Z"
+  },
+  "kolla|276 east 12200 south, draper, ut": {
+    "status": "ok",
+    "lat": 40.5282638,
+    "lng": -111.8824996,
+    "confidence": "google",
+    "formattedAddress": "276 E 12200 S, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:06.488Z"
+  },
+  "krado|2223 south highland drive, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7224409,
+    "lng": -111.8578592,
+    "confidence": "google",
+    "formattedAddress": "2223 S Highland Dr, Salt Lake City, UT 84106, USA",
+    "fetchedAt": "2026-05-08T16:30:06.682Z"
+  },
+  "leash bio|48 south rio grande street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7678699,
+    "lng": -111.9044611,
+    "confidence": "google",
+    "formattedAddress": "48 S Rio Grande St, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:06.850Z"
+  },
+  "leeway|1920 blaine avenue, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.73271039999999,
+    "lng": -111.8358497,
+    "confidence": "google",
+    "formattedAddress": "1920 Blaine Ave, Salt Lake City, UT 84108, USA",
+    "fetchedAt": "2026-05-08T16:30:07.083Z"
+  },
+  "literal|1555 freedom boulevard, provo, ut": {
+    "status": "ok",
+    "lat": 40.2549196,
+    "lng": -111.6622661,
+    "confidence": "google",
+    "formattedAddress": "1555 N Freedom Blvd, Provo, UT 84604, USA",
+    "fetchedAt": "2026-05-08T16:30:07.269Z"
+  },
+  "looloo|12101 state street, draper, ut": {
+    "status": "ok",
+    "lat": 40.5318736,
+    "lng": -111.887704,
+    "confidence": "google",
+    "formattedAddress": "12101 State St, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:07.428Z"
+  },
+  "masset|815 south east mountain circle, alpine, ut": {
+    "status": "ok",
+    "lat": 40.441601,
+    "lng": -111.7586157,
+    "confidence": "google",
+    "formattedAddress": "815 E Mountain Cir, Alpine, UT 84004, USA",
+    "fetchedAt": "2026-05-08T16:30:07.614Z"
+  },
+  "mindsmith|800 west university parkway, orem, ut": {
+    "status": "ok",
+    "lat": 40.2787626,
+    "lng": -111.7153739,
+    "confidence": "google",
+    "formattedAddress": "800 W University Pkwy, Orem, UT 84058, USA",
+    "fetchedAt": "2026-05-08T16:30:07.805Z"
+  },
+  "nanospot.ai|630 south komas drive, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.755275,
+    "lng": -111.818552,
+    "confidence": "google",
+    "formattedAddress": "630 S Komas Dr, Salt Lake City, UT 84108, USA",
+    "fetchedAt": "2026-05-08T16:30:07.998Z"
+  },
+  "nodal power|250 e 200 s, salt lake city ut 84111": {
+    "status": "ok",
+    "lat": 40.7645464,
+    "lng": -111.8845258,
+    "confidence": "google",
+    "formattedAddress": "250 E 200 S, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:08.170Z"
+  },
+  "pageport|272 north 100 east, american fork, ut": {
+    "status": "ok",
+    "lat": 40.382482,
+    "lng": -111.7955385,
+    "confidence": "google",
+    "formattedAddress": "272 N 100 E, American Fork, UT 84003, USA",
+    "fetchedAt": "2026-05-08T16:30:08.367Z"
+  },
+  "pale blue|2750 rassmussen road, park city, ut": {
+    "status": "ok",
+    "lat": 40.7451893,
+    "lng": -111.5620712,
+    "confidence": "google",
+    "formattedAddress": "2750 Rasmussen Rd, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:08.578Z"
+  },
+  "parakeet financial|midvale, ut": {
+    "status": "ok",
+    "lat": 40.6110589,
+    "lng": -111.8999353,
+    "confidence": "google",
+    "formattedAddress": "Midvale, UT, USA",
+    "fetchedAt": "2026-05-08T16:30:08.734Z"
+  },
+  "pyrofex|4692 n 300 w, orem, utah, 84604": {
+    "status": "ok",
+    "lat": 40.2961591,
+    "lng": -111.6622805,
+    "confidence": "google",
+    "formattedAddress": "4692 N 300 W, Provo, UT 84604, USA",
+    "fetchedAt": "2026-05-08T16:30:08.936Z"
+  },
+  "signalhero|2376 east 3395 south, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.6974773,
+    "lng": -111.8220084,
+    "confidence": "google",
+    "formattedAddress": "2376 3395 S, Salt Lake City, UT 84109, USA",
+    "fetchedAt": "2026-05-08T16:30:09.128Z"
+  },
+  "roger|1441 perry avenue, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7711737,
+    "lng": -111.8496712,
+    "confidence": "google",
+    "formattedAddress": "1441 Perry Ave, Salt Lake City, UT 84103, USA",
+    "fetchedAt": "2026-05-08T16:30:09.323Z"
+  },
+  "slipstream medical|299 south main street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7632608,
+    "lng": -111.8908639,
+    "confidence": "google",
+    "formattedAddress": "Bank, 299 S Main St, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:09.492Z"
+  },
+  "stumbl|5526 west 13400 south, herriman, ut": {
+    "status": "ok",
+    "lat": 40.5090299,
+    "lng": -112.0225869,
+    "confidence": "google",
+    "formattedAddress": "5526 13400 S, Herriman, UT 84096, USA",
+    "fetchedAt": "2026-05-08T16:30:09.654Z"
+  },
+  "treads|1090 center drive, park city, ut": {
+    "status": "ok",
+    "lat": 40.7193744,
+    "lng": -111.539098,
+    "confidence": "google",
+    "formattedAddress": "1090 Center Dr, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:09.848Z"
+  },
+  "upkid|3450 triumph boulevard, lehi, ut": {
+    "status": "ok",
+    "lat": 40.43085689999999,
+    "lng": -111.8794954,
+    "confidence": "google",
+    "formattedAddress": "3450 Triumph Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:10.005Z"
+  },
+  "viori|1123 north 1430 west, orem, ut": {
+    "status": "ok",
+    "lat": 40.3175243,
+    "lng": -111.7305724,
+    "confidence": "google",
+    "formattedAddress": "1123 1430 W, Orem, UT 84057, USA",
+    "fetchedAt": "2026-05-08T16:30:10.199Z"
+  },
+  "yoodlize|826 south carterville road, orem, ut": {
+    "status": "ok",
+    "lat": 40.281856,
+    "lng": -111.6715997,
+    "confidence": "google",
+    "formattedAddress": "826 S Carterville Rd, Orem, UT 84097, USA",
+    "fetchedAt": "2026-05-08T16:30:10.388Z"
+  },
+  "zaymo|560 south 100 west, provo, ut": {
+    "status": "ok",
+    "lat": 40.2262533,
+    "lng": -111.6608274,
+    "confidence": "google",
+    "formattedAddress": "560 S 100 W St, Provo, UT 84601, USA",
+    "fetchedAt": "2026-05-08T16:30:10.584Z"
+  },
+  "after.com|560 south 100 west, provo, ut": {
+    "status": "ok",
+    "lat": 40.2262533,
+    "lng": -111.6608274,
+    "confidence": "google",
+    "formattedAddress": "560 S 100 W St, Provo, UT 84601, USA",
+    "fetchedAt": "2026-05-08T16:30:10.657Z"
+  },
+  "applause|5442 south 900 east, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.6524775,
+    "lng": -111.8671145,
+    "confidence": "google",
+    "formattedAddress": "5442 S 900 E, Salt Lake City, UT 84117, USA",
+    "fetchedAt": "2026-05-08T16:30:10.835Z"
+  },
+  "attestiv|2701 north thanksgiving way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4209358,
+    "lng": -111.8816934,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:11.020Z"
+  },
+  "boostly|560 south 100 west, provo, ut": {
+    "status": "ok",
+    "lat": 40.2262533,
+    "lng": -111.6608274,
+    "confidence": "google",
+    "formattedAddress": "560 S 100 W St, Provo, UT 84601, USA",
+    "fetchedAt": "2026-05-08T16:30:11.093Z"
+  },
+  "brite|341 south main street floor, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7618055,
+    "lng": -111.8905343,
+    "confidence": "google",
+    "formattedAddress": "341 S Main St, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:11.271Z"
+  },
+  "brooksee|374 south 671 west, pleasant grove, ut": {
+    "status": "ok",
+    "lat": 40.3592257,
+    "lng": -111.7505226,
+    "confidence": "google",
+    "formattedAddress": "374 S 671 W, Pleasant Grove, UT 84062, USA",
+    "fetchedAt": "2026-05-08T16:30:11.460Z"
+  },
+  "built for teams|155 north 400 west, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7723483,
+    "lng": -111.90301,
+    "confidence": "google",
+    "formattedAddress": "155 N 400 W, Salt Lake City, UT 84103, USA",
+    "fetchedAt": "2026-05-08T16:30:11.660Z"
+  },
+  "cardagraph|2961 maple loop drive, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4316995,
+    "lng": -111.8968688,
+    "confidence": "google",
+    "formattedAddress": "2961 W Maple Loop Dr, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:11.849Z"
+  },
+  "cinch|67 w 13490, draper, ut 84020": {
+    "status": "ok",
+    "lat": 40.5052747,
+    "lng": -111.8931252,
+    "confidence": "google",
+    "formattedAddress": "67 W 13490 S, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:12.031Z"
+  },
+  "cloud storage security|1944 east ashley mesa lane, sandy, ut": {
+    "status": "ok",
+    "lat": 40.5631703,
+    "lng": -111.8356539,
+    "confidence": "google",
+    "formattedAddress": "1944 Ashley Mesa Ln, Sandy, UT 84092, USA",
+    "fetchedAt": "2026-05-08T16:30:12.208Z"
+  },
+  "continuum|2845 east 3365 south, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.6984167,
+    "lng": -111.8114161,
+    "confidence": "google",
+    "formattedAddress": "2845 3365 S, Salt Lake City, UT 84109, USA",
+    "fetchedAt": "2026-05-08T16:30:12.404Z"
+  },
+  "droplet|2701 north thanksgiving way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4209358,
+    "lng": -111.8816934,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:12.478Z"
+  },
+  "elements|879 baxter drive, south jordan, ut": {
+    "status": "ok",
+    "lat": 40.5602037,
+    "lng": -111.9146246,
+    "confidence": "google",
+    "formattedAddress": "879 Baxter Dr, South Jordan, UT 84095, USA",
+    "fetchedAt": "2026-05-08T16:30:12.639Z"
+  },
+  "ember|1850 w ashton blvd, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4193582,
+    "lng": -111.8810521,
+    "confidence": "google",
+    "formattedAddress": "1850 W Ashton Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:12.796Z"
+  },
+  "flowell|419 east coatsville avenue, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.731649,
+    "lng": -111.8789912,
+    "confidence": "google",
+    "formattedAddress": "419 E Coatsville Ave, Salt Lake City, UT 84115, USA",
+    "fetchedAt": "2026-05-08T16:30:12.972Z"
+  },
+  "fluentworlds|3317 north cottonwood lane, provo, ut": {
+    "status": "ok",
+    "lat": 40.2774392,
+    "lng": -111.6655663,
+    "confidence": "google",
+    "formattedAddress": "3317 N Cottonwood Ln, Provo, UT 84604, USA",
+    "fetchedAt": "2026-05-08T16:30:13.161Z"
+  },
+  "gauge|332 east 3300 south, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.6993933,
+    "lng": -111.881474,
+    "confidence": "google",
+    "formattedAddress": "332 E 3300 S, South Salt Lake, UT 84115, USA",
+    "fetchedAt": "2026-05-08T16:30:13.356Z"
+  },
+  "halda|560 south 100 west, provo, ut": {
+    "status": "ok",
+    "lat": 40.2262533,
+    "lng": -111.6608274,
+    "confidence": "google",
+    "formattedAddress": "560 S 100 W St, Provo, UT 84601, USA",
+    "fetchedAt": "2026-05-08T16:30:13.429Z"
+  },
+  "halosight|13 west wasatch street, midvale, ut": {
+    "status": "ok",
+    "lat": 40.6057086,
+    "lng": -111.8919055,
+    "confidence": "google",
+    "formattedAddress": "13 Wasatch St., Midvale, UT 84047, USA",
+    "fetchedAt": "2026-05-08T16:30:13.593Z"
+  },
+  "leland|2701 north thanksgiving way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4209358,
+    "lng": -111.8816934,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:13.666Z"
+  },
+  "limit break|6300 north sagewood drive, park city, ut": {
+    "status": "ok",
+    "lat": 40.7231089,
+    "lng": -111.5438872,
+    "confidence": "google",
+    "formattedAddress": "6300 N Sagewood Dr, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:13.870Z"
+  },
+  "metrodora institute|3535 south market street, west valley city, ut": {
+    "status": "ok",
+    "lat": 40.6957291,
+    "lng": -111.9591849,
+    "confidence": "google",
+    "formattedAddress": "3535 Market St, West Valley City, UT 84119, USA",
+    "fetchedAt": "2026-05-08T16:30:14.042Z"
+  },
+  "mobly|2801 n thanksgiving way, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4223384,
+    "lng": -111.8833514,
+    "confidence": "google",
+    "formattedAddress": "2801 N Thanksgiving Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:14.201Z"
+  },
+  "modal living|legal 150 south state street, salt lake city, ut": {
+    "status": "miss",
+    "fetchedAt": "2026-05-08T16:30:14.403Z",
+    "reason": "No exact Google geocode result."
+  },
+  "monarx|8 east broadway, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7625436,
+    "lng": -111.8905967,
+    "confidence": "google",
+    "formattedAddress": "8 E Broadway, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:14.602Z"
+  },
+  "motionops|15 west scenic point drive, draper, ut": {
+    "status": "ok",
+    "lat": 40.4806462,
+    "lng": -111.8917693,
+    "confidence": "google",
+    "formattedAddress": "15 W Scenic Pointe Dr, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:14.809Z"
+  },
+  "oka|1389 center drive, park city, ut": {
+    "status": "ok",
+    "lat": 40.72322339999999,
+    "lng": -111.5379801,
+    "confidence": "google",
+    "formattedAddress": "1389 Center Dr, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:14.976Z"
+  },
+  "oliver iq|8911 south sandy parkway, sandy, ut": {
+    "status": "ok",
+    "lat": 40.5896121,
+    "lng": -111.9037277,
+    "confidence": "google",
+    "formattedAddress": "8911 Sandy Pkwy, Sandy, UT 84070, USA",
+    "fetchedAt": "2026-05-08T16:30:15.137Z"
+  },
+  "olumo|2701 north thanksgiving way 100, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4208923,
+    "lng": -111.8816057,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way Ste: 100, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:15.332Z"
+  },
+  "ovation|75 west university parkway, orem, ut": {
+    "status": "ok",
+    "lat": 40.2733111,
+    "lng": -111.6973107,
+    "confidence": "google",
+    "formattedAddress": "75 W University Pkwy, Orem, UT 84058, USA",
+    "fetchedAt": "2026-05-08T16:30:15.490Z"
+  },
+  "paiv|1633 west innovation way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4305894,
+    "lng": -111.8757027,
+    "confidence": "google",
+    "formattedAddress": "1633 W Innovation Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:15.563Z"
+  },
+  "paramify|1555 north freedom boulevard 200 west, provo, ut": {
+    "status": "miss",
+    "fetchedAt": "2026-05-08T16:30:15.834Z",
+    "reason": "No exact Google geocode result."
+  },
+  "particl|1300 west 11400 street, south jordan, ut": {
+    "status": "ok",
+    "lat": 40.5435942,
+    "lng": -111.9297275,
+    "confidence": "google",
+    "formattedAddress": "1300 W 11400 S, South Jordan, UT 84095, USA",
+    "fetchedAt": "2026-05-08T16:30:16.006Z"
+  },
+  "paterna biosciences|2749 east parleys way, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7179599,
+    "lng": -111.8106886,
+    "confidence": "google",
+    "formattedAddress": "2749 E Parleys Way, Salt Lake City, UT 84109, USA",
+    "fetchedAt": "2026-05-08T16:30:16.203Z"
+  },
+  "paykeeper|893 baxter drive, south jordan, ut": {
+    "status": "ok",
+    "lat": 40.559988,
+    "lng": -111.914961,
+    "confidence": "google",
+    "formattedAddress": "893 Baxter Dr, South Jordan, UT 84095, USA",
+    "fetchedAt": "2026-05-08T16:30:16.397Z"
+  },
+  "pestie|920 w 14600 s suite 600, bluffdale, ut 84065": {
+    "status": "ok",
+    "lat": 40.4891067,
+    "lng": -111.9173016,
+    "confidence": "google",
+    "formattedAddress": "920 W 14600 S #600, Bluffdale, UT 84065, USA",
+    "fetchedAt": "2026-05-08T16:30:16.600Z"
+  },
+  "powder watts|2570 rasmussen road, park city, ut": {
+    "status": "ok",
+    "lat": 40.7411653,
+    "lng": -111.5586399,
+    "confidence": "google",
+    "formattedAddress": "2570 Rasmussen Rd, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:16.797Z"
+  },
+  "qualiti|2701 north thanksgiving way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4209358,
+    "lng": -111.8816934,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:16.870Z"
+  },
+  "rasa|180 east 2100 south, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7252084,
+    "lng": -111.8858765,
+    "confidence": "google",
+    "formattedAddress": "180 E 2100 S, South Salt Lake, UT 84115, USA",
+    "fetchedAt": "2026-05-08T16:30:17.067Z"
+  },
+  "referpro|1633 west innovation way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4305894,
+    "lng": -111.8757027,
+    "confidence": "google",
+    "formattedAddress": "1633 W Innovation Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:17.139Z"
+  },
+  "ripe|650 south 500 west, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7551251,
+    "lng": -111.9056166,
+    "confidence": "google",
+    "formattedAddress": "650 S 500 W, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:17.338Z"
+  },
+  "roster|2701 north thanksgiving way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4209358,
+    "lng": -111.8816934,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:17.410Z"
+  },
+  "sabx|1389 center drive, park city, ut": {
+    "status": "ok",
+    "lat": 40.72322339999999,
+    "lng": -111.5379801,
+    "confidence": "google",
+    "formattedAddress": "1389 Center Dr, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:17.483Z"
+  },
+  "safety mojo|10011 south centennial parkway, sandy, ut": {
+    "status": "ok",
+    "lat": 40.5693386,
+    "lng": -111.8943692,
+    "confidence": "google",
+    "formattedAddress": "10011 Centennial Pkwy, Sandy, UT 84070, USA",
+    "fetchedAt": "2026-05-08T16:30:17.678Z"
+  },
+  "salad|26 south rio grande street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7687816,
+    "lng": -111.9044144,
+    "confidence": "google",
+    "formattedAddress": "26 S Rio Grande St, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:17.750Z"
+  },
+  "sameday|1557 west innovation way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4307726,
+    "lng": -111.8745553,
+    "confidence": "google",
+    "formattedAddress": "1557 W Innovation Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:17.824Z"
+  },
+  "savvos|629 east quality drive, american fork, ut": {
+    "status": "ok",
+    "lat": 40.3624822,
+    "lng": -111.7814636,
+    "confidence": "google",
+    "formattedAddress": "629 E 700 S, American Fork, UT 84003, USA",
+    "fetchedAt": "2026-05-08T16:30:17.981Z"
+  },
+  "schoolai|1441 w innovation way, lehi, ut 84043-4677": {
+    "status": "ok",
+    "lat": 40.4310477,
+    "lng": -111.8720666,
+    "confidence": "google",
+    "formattedAddress": "1441 W Innovation Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:18.170Z"
+  },
+  "seis|1557 west innovation way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4307726,
+    "lng": -111.8745553,
+    "confidence": "google",
+    "formattedAddress": "1557 W Innovation Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:18.242Z"
+  },
+  "skill struck|629 east quality drive, american fork, ut": {
+    "status": "ok",
+    "lat": 40.3624822,
+    "lng": -111.7814636,
+    "confidence": "google",
+    "formattedAddress": "629 E 700 S, American Fork, UT 84003, USA",
+    "fetchedAt": "2026-05-08T16:30:18.315Z"
+  },
+  "syncware|6300 sagewood drive, park city, ut": {
+    "status": "ok",
+    "lat": 40.7231089,
+    "lng": -111.5438872,
+    "confidence": "google",
+    "formattedAddress": "6300 N Sagewood Dr, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:18.471Z"
+  },
+  "tellus|2319 south foothill drive, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7212846,
+    "lng": -111.8107928,
+    "confidence": "google",
+    "formattedAddress": "2319 S Foothill Dr, Salt Lake City, UT 84109, USA",
+    "fetchedAt": "2026-05-08T16:30:18.637Z"
+  },
+  "troomi|3300 triumph boulevard, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4286701,
+    "lng": -111.878657,
+    "confidence": "google",
+    "formattedAddress": "3300 Triumph Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:18.820Z"
+  },
+  "velocity access|412 west rivers edge drive, provo, ut": {
+    "status": "ok",
+    "lat": 40.2649912,
+    "lng": -111.6669027,
+    "confidence": "google",
+    "formattedAddress": "412 W Rivers Edge Dr, Provo, UT 84604, USA",
+    "fetchedAt": "2026-05-08T16:30:19.017Z"
+  },
+  "velosimo|12537 south brundisi way, herriman, ut": {
+    "status": "ok",
+    "lat": 40.5236127,
+    "lng": -112.0228373,
+    "confidence": "google",
+    "formattedAddress": "12537 Brundisi Way, Herriman, UT 84096, USA",
+    "fetchedAt": "2026-05-08T16:30:19.178Z"
+  },
+  "videra health|898 north 1200 west, orem, ut": {
+    "status": "ok",
+    "lat": 40.3138454,
+    "lng": -111.7227423,
+    "confidence": "google",
+    "formattedAddress": "898 N 1200 W, Orem, UT 84057, USA",
+    "fetchedAt": "2026-05-08T16:30:19.346Z"
+  },
+  "wander|1083 terrace drive, provo, ut": {
+    "status": "ok",
+    "lat": 40.2482668,
+    "lng": -111.6299819,
+    "confidence": "google",
+    "formattedAddress": "1083 Terrace Dr, Provo, UT 84604, USA",
+    "fetchedAt": "2026-05-08T16:30:19.526Z"
+  },
+  "wasatch biolabs|321 west 1300 south, heber city, ut": {
+    "status": "ok",
+    "lat": 40.4910462,
+    "lng": -111.419479,
+    "confidence": "google",
+    "formattedAddress": "321 W 1300 S, Heber City, UT 84032, USA",
+    "fetchedAt": "2026-05-08T16:30:19.696Z"
+  },
+  "xenter|344 west 13800 south, draper, ut": {
+    "status": "ok",
+    "lat": 40.5032669,
+    "lng": -111.9016836,
+    "confidence": "google",
+    "formattedAddress": "344 W 13800 S, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:19.851Z"
+  },
+  "zanskar|90 south 400 west, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7674228,
+    "lng": -111.9028737,
+    "confidence": "google",
+    "formattedAddress": "90 S 400 W, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:20.016Z"
+  },
+  "zapmoto|11779 pennbrooke lane, highland, ut": {
+    "status": "ok",
+    "lat": 40.4459168,
+    "lng": -111.7988624,
+    "confidence": "google",
+    "formattedAddress": "11779 Pennbrooke Ln, Highland, UT 84003, USA",
+    "fetchedAt": "2026-05-08T16:30:20.194Z"
+  },
+  "alianza|1064 south north county boulevard, pleasant grove, ut": {
+    "status": "ok",
+    "lat": 40.3519632,
+    "lng": -111.7610875,
+    "confidence": "google",
+    "formattedAddress": "1064 S N County Blvd, Pleasant Grove, UT 84062, USA",
+    "fetchedAt": "2026-05-08T16:30:20.401Z"
+  },
+  "blue eye|15 w south temple, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7691317,
+    "lng": -111.8913732,
+    "confidence": "google",
+    "formattedAddress": "15 W S Temple St, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:20.577Z"
+  },
+  "cotopaxi|74 main street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7674578,
+    "lng": -111.8914054,
+    "confidence": "google",
+    "formattedAddress": "74 S Main St, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:20.764Z"
+  },
+  "cupbop|593 e 12300 s ste b draper, ut, 84020": {
+    "status": "ok",
+    "lat": 40.5270293,
+    "lng": -111.8756307,
+    "confidence": "google",
+    "formattedAddress": "593 E 12300 S b, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:20.942Z"
+  },
+  "gabb wireless|2701 north thanksgiving way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4209358,
+    "lng": -111.8816934,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:21.013Z"
+  },
+  "homie|489 south jordan parkway, south jordan, ut": {
+    "status": "ok",
+    "lat": 40.5584109,
+    "lng": -111.9042908,
+    "confidence": "google",
+    "formattedAddress": "489 S Jordan Pkwy W, South Jordan, UT 84095, USA",
+    "fetchedAt": "2026-05-08T16:30:21.172Z"
+  },
+  "pura|2100 pleasant grove, boulevard, pleasant grove, ut": {
+    "status": "ok",
+    "lat": 40.3521176,
+    "lng": -111.7683197,
+    "confidence": "google",
+    "formattedAddress": "2100 W Pleasant Grove Blvd, Pleasant Grove, UT 84062, USA",
+    "fetchedAt": "2026-05-08T16:30:21.340Z"
+  },
+  "route|1441 west innovation way, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4310477,
+    "lng": -111.8720666,
+    "confidence": "google",
+    "formattedAddress": "1441 W Innovation Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:21.498Z"
+  },
+  "solo|3049 executive parkway, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4281946,
+    "lng": -111.8985773,
+    "confidence": "google",
+    "formattedAddress": "3049 W Executive Pkwy, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:21.652Z"
+  },
+  "vanderhall|3500 mountain vista parkway, provo, ut": {
+    "status": "ok",
+    "lat": 40.1914318,
+    "lng": -111.621284,
+    "confidence": "google",
+    "formattedAddress": "3500 Mountain Vista Pkwy, Provo, UT 84606, USA",
+    "fetchedAt": "2026-05-08T16:30:21.829Z"
+  },
+  "nomi health|898 north 1200 west, orem, ut": {
+    "status": "ok",
+    "lat": 40.3138454,
+    "lng": -111.7227423,
+    "confidence": "google",
+    "formattedAddress": "898 N 1200 W, Orem, UT 84057, USA",
+    "fetchedAt": "2026-05-08T16:30:21.902Z"
+  },
+  "american battery factory|735 auto mall drive, american fork, ut": {
+    "status": "ok",
+    "lat": 40.3622944,
+    "lng": -111.7904356,
+    "confidence": "google",
+    "formattedAddress": "735 Automall Dr, American Fork, UT 84003, USA",
+    "fetchedAt": "2026-05-08T16:30:22.065Z"
+  },
+  "atomic|2890 east cottonwood parkway, cottonwood heights, ut": {
+    "status": "ok",
+    "lat": 40.6319811,
+    "lng": -111.8110256,
+    "confidence": "google",
+    "formattedAddress": "2890 E Cottonwood Pkwy, Cottonwood Heights, UT 84121, USA",
+    "fetchedAt": "2026-05-08T16:30:22.238Z"
+  },
+  "bacon|3715 tracy hall parkway, provo, ut": {
+    "status": "ok",
+    "lat": 40.1895591,
+    "lng": -111.6199583,
+    "confidence": "google",
+    "formattedAddress": "3715 Tracy Hall Pkwy, Provo, UT 84606, USA",
+    "fetchedAt": "2026-05-08T16:30:22.422Z"
+  },
+  "bandwango|6905 south 1300 east, cottonwood heights, ut": {
+    "status": "ok",
+    "lat": 40.6244456,
+    "lng": -111.8544365,
+    "confidence": "google",
+    "formattedAddress": "6905 S 1300 E, Cottonwood Heights, UT 84047, USA",
+    "fetchedAt": "2026-05-08T16:30:22.588Z"
+  },
+  "chargezoom|6440 millrock drive, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.6340686,
+    "lng": -111.8016168,
+    "confidence": "google",
+    "formattedAddress": "6440 Millrock Dr, Holladay, UT 84121, USA",
+    "fetchedAt": "2026-05-08T16:30:22.863Z"
+  },
+  "herodevs|9561 s 700 e, sandy, ut 84070": {
+    "status": "ok",
+    "lat": 40.577842,
+    "lng": -111.8706806,
+    "confidence": "google",
+    "formattedAddress": "9561 S 700 E, Sandy, UT 84070, USA",
+    "fetchedAt": "2026-05-08T16:30:23.022Z"
+  },
+  "hona|553 timpanogos cir suite 2300, orem, ut 84097": {
+    "status": "ok",
+    "lat": 40.3241516,
+    "lng": -111.682045,
+    "confidence": "google",
+    "formattedAddress": "553 Timpanogos Cir #2300, Orem, UT 84097, USA",
+    "fetchedAt": "2026-05-08T16:30:23.209Z"
+  },
+  "hypercraft|1200 towne centre boulevard, provo, ut": {
+    "status": "ok",
+    "lat": 40.2196907,
+    "lng": -111.6608969,
+    "confidence": "google",
+    "formattedAddress": "Mall Lower Level South Wing, 1200 Towne Centre Blvd, Provo, UT 84601, USA",
+    "fetchedAt": "2026-05-08T16:30:23.387Z"
+  },
+  "idrive logistics|1850 ashton boulevard, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4193582,
+    "lng": -111.8810521,
+    "confidence": "google",
+    "formattedAddress": "1850 W Ashton Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:23.596Z"
+  },
+  "isotalent|2600 executive parkway, lehi, ut": {
+    "status": "ok",
+    "lat": 40.427778,
+    "lng": -111.8919324,
+    "confidence": "google",
+    "formattedAddress": "2600 W Executive Pkwy, Lehi, UT 84048, USA",
+    "fetchedAt": "2026-05-08T16:30:23.778Z"
+  },
+  "music ai|4001 south 700 east, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.684929,
+    "lng": -111.8699469,
+    "confidence": "google",
+    "formattedAddress": "4001 S 700 E, Millcreek, UT 84107, USA",
+    "fetchedAt": "2026-05-08T16:30:23.995Z"
+  },
+  "motivhealth|10421 south jordan gateway, south jordan, ut": {
+    "status": "ok",
+    "lat": 40.5621914,
+    "lng": -111.9013403,
+    "confidence": "google",
+    "formattedAddress": "10421 S Jordan Gateway, South Jordan, UT 84095, USA",
+    "fetchedAt": "2026-05-08T16:30:24.168Z"
+  },
+  "murf|341 south main street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7618055,
+    "lng": -111.8905343,
+    "confidence": "google",
+    "formattedAddress": "341 S Main St, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:24.369Z"
+  },
+  "nectar hr|1300 w traverse pkwy, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4352302,
+    "lng": -111.8714967,
+    "confidence": "google",
+    "formattedAddress": "1300 W Traverse Pkwy, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:24.554Z"
+  },
+  "nivati|10808 south river front parkway, south jordan, ut": {
+    "status": "ok",
+    "lat": 40.5555696,
+    "lng": -111.9138694,
+    "confidence": "google",
+    "formattedAddress": "RiverPark Fourteen, 10808 S River Front Pkwy, South Jordan, UT 84095, USA",
+    "fetchedAt": "2026-05-08T16:30:24.812Z"
+  },
+  "nursa|5295 commerce drive, murray, ut": {
+    "status": "ok",
+    "lat": 40.6556957,
+    "lng": -111.8989648,
+    "confidence": "google",
+    "formattedAddress": "5295 Commerce Dr, Murray, UT 84107, USA",
+    "fetchedAt": "2026-05-08T16:30:24.999Z"
+  },
+  "pillow cube|1815 s state st, orem, ut 84097": {
+    "status": "ok",
+    "lat": 40.2638397,
+    "lng": -111.6775309,
+    "confidence": "google",
+    "formattedAddress": "1815 S State St, Orem, UT 84097, USA",
+    "fetchedAt": "2026-05-08T16:30:25.216Z"
+  },
+  "project solar|1850 west ashton boulevard, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4193582,
+    "lng": -111.8810521,
+    "confidence": "google",
+    "formattedAddress": "1850 W Ashton Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:25.371Z"
+  },
+  "redo|14761 future way, draper, ut 84020": {
+    "status": "ok",
+    "lat": 40.48337799999999,
+    "lng": -111.8925544,
+    "confidence": "google",
+    "formattedAddress": "14761 Future Way, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:25.554Z"
+  },
+  "remi|1800 ashton boulevard, lehi, ut": {
+    "status": "ok",
+    "lat": 40.4192948,
+    "lng": -111.8798759,
+    "confidence": "google",
+    "formattedAddress": "1800 W Ashton Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:25.738Z"
+  },
+  "rivet health|9815 s monroe street, sandy, ut 84070": {
+    "status": "ok",
+    "lat": 40.5734397,
+    "lng": -111.8980799,
+    "confidence": "google",
+    "formattedAddress": "9815 Monroe St, Sandy, UT 84070, USA",
+    "fetchedAt": "2026-05-08T16:30:25.932Z"
+  },
+  "stay ai|3209 daybreaker drive, park city, ut": {
+    "status": "ok",
+    "lat": 40.7650269,
+    "lng": -111.5725011,
+    "confidence": "google",
+    "formattedAddress": "3209 Daybreaker Dr, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:26.093Z"
+  },
+  "strider|10377 south jordan gateway, south jordan, ut": {
+    "status": "ok",
+    "lat": 40.56323709999999,
+    "lng": -111.9014902,
+    "confidence": "google",
+    "formattedAddress": "10377 S Jordan Gateway, South Jordan, UT 84095, USA",
+    "fetchedAt": "2026-05-08T16:30:26.265Z"
+  },
+  "tava health|645 south 200 east salt lake city, utah 84111": {
+    "status": "ok",
+    "lat": 40.7550073,
+    "lng": -111.88485,
+    "confidence": "google",
+    "formattedAddress": "645 S 200 E, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:26.473Z"
+  },
+  "the picklr|559 south deseret drive, kaysville, ut": {
+    "status": "ok",
+    "lat": 41.0260981,
+    "lng": -111.9485107,
+    "confidence": "google",
+    "formattedAddress": "559 Deseret Dr, Kaysville, UT 84037, USA",
+    "fetchedAt": "2026-05-08T16:30:26.661Z"
+  },
+  "torus|855 west 2400 south, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.71754079999999,
+    "lng": -111.9158004,
+    "confidence": "google",
+    "formattedAddress": "855 W 2400 S, South Salt Lake, UT 84119, USA",
+    "fetchedAt": "2026-05-08T16:30:26.916Z"
+  },
+  "vanilla|310 south main street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7624424,
+    "lng": -111.8913934,
+    "confidence": "google",
+    "formattedAddress": "310 S Main St, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:27.092Z"
+  },
+  "voze|44 w 13800 s, draper , ut 84020": {
+    "status": "ok",
+    "lat": 40.5010406,
+    "lng": -111.8936395,
+    "confidence": "google",
+    "formattedAddress": "44 W 13800 S, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:27.313Z"
+  },
+  "xevant|3400 north ashton boulevard, lehi, ut": {
+    "status": "ok",
+    "lat": 40.42974,
+    "lng": -111.8941264,
+    "confidence": "google",
+    "formattedAddress": "3400 N Ashton Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:27.386Z"
+  },
+  "zartico|26 south rio grande street, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7687816,
+    "lng": -111.9044144,
+    "confidence": "google",
+    "formattedAddress": "26 S Rio Grande St, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:27.460Z"
+  },
+  "3helix|650 komas drive, salt lake city, ut": {
+    "status": "ok",
+    "lat": 40.7545527,
+    "lng": -111.8292685,
+    "confidence": "google",
+    "formattedAddress": "650 Komas Dr, Salt Lake City, UT 84108, USA",
+    "fetchedAt": "2026-05-08T16:30:27.649Z"
+  },
+  "drumcv|2022 tuscany way, pleasant grove, ut": {
+    "status": "ok",
+    "lat": 40.3855413,
+    "lng": -111.7467311,
+    "confidence": "google",
+    "formattedAddress": "2022 Tuscany Way, Pleasant Grove, UT 84062, USA",
+    "fetchedAt": "2026-05-08T16:30:27.836Z"
+  },
+  "canopy tax|10355 s jordan gateway suite 500, south jordan, ut 84095": {
+    "status": "ok",
+    "lat": 40.5643938,
+    "lng": -111.9014495,
+    "confidence": "google",
+    "formattedAddress": "10355 S Jordan Gateway Suite 500, South Jordan, UT 84095, USA",
+    "fetchedAt": "2026-05-08T16:30:28.014Z"
+  },
+  "observepoint|2100 pleasant grove blvd #300, pleasant grove, ut 84062": {
+    "status": "ok",
+    "lat": 40.3521176,
+    "lng": -111.7683197,
+    "confidence": "google",
+    "formattedAddress": "2100 Pleasant Grove Blvd #300, Pleasant Grove, UT 84062, USA",
+    "fetchedAt": "2026-05-08T16:30:28.215Z"
+  },
+  "mx|n 3401 n thanksgiving way #500, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4296944,
+    "lng": -111.892,
+    "confidence": "google",
+    "formattedAddress": "3401 N Thanksgiving Way #500, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:28.452Z"
+  },
+  "neighbor|2600 executive pkwy suite 550, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.427778,
+    "lng": -111.8919324,
+    "confidence": "google",
+    "formattedAddress": "2600 W Executive Pkwy #550, Lehi, UT 84048, USA",
+    "fetchedAt": "2026-05-08T16:30:28.638Z"
+  },
+  "bookclub|7533 center view ct, # 4134, west jordan, utah 84084": {
+    "status": "ok",
+    "lat": 40.6143756,
+    "lng": -111.9838281,
+    "confidence": "google",
+    "formattedAddress": "7533 Center View Ct #4134, West Jordan, UT 84084, USA",
+    "fetchedAt": "2026-05-08T16:30:28.812Z"
+  },
+  "liveview technologies|802 e 1050 s american fork, utah 84003 us": {
+    "status": "ok",
+    "lat": 40.3560867,
+    "lng": -111.7762899,
+    "confidence": "google",
+    "formattedAddress": "802 E 1050 S, American Fork, UT 84003, USA",
+    "fetchedAt": "2026-05-08T16:30:29.002Z"
+  },
+  "lucid|10355 s jordan gateway #300, south jordan, ut 84095": {
+    "status": "ok",
+    "lat": 40.5644166,
+    "lng": -111.9015891,
+    "confidence": "google",
+    "formattedAddress": "10355 S Jordan Gateway #300, South Jordan, UT 84095, USA",
+    "fetchedAt": "2026-05-08T16:30:29.184Z"
+  },
+  "jump|14761 future way, draper, ut 84020": {
+    "status": "ok",
+    "lat": 40.48337799999999,
+    "lng": -111.8925544,
+    "confidence": "google",
+    "formattedAddress": "14761 Future Way, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:29.257Z"
+  },
+  "previ|3400 ashton blvd #160, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4297782,
+    "lng": -111.8943629,
+    "confidence": "google",
+    "formattedAddress": "3400 N Ashton Blvd #160, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:29.431Z"
+  },
+  "alpyne|3585 e ceres dr, salt lake city, utah 84124, us": {
+    "status": "ok",
+    "lat": 40.6808681,
+    "lng": -111.7939565,
+    "confidence": "google",
+    "formattedAddress": "3585 E Ceres Dr, Salt Lake City, UT 84124, USA",
+    "fetchedAt": "2026-05-08T16:30:29.635Z"
+  },
+  "distro|550 west state street, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.40512,
+    "lng": -111.8582697,
+    "confidence": "google",
+    "formattedAddress": "550 W State St, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:29.793Z"
+  },
+  "avy|6975 south union park avenue, cottonwood heights, ut 84047": {
+    "status": "ok",
+    "lat": 40.6238946,
+    "lng": -111.8558804,
+    "confidence": "google",
+    "formattedAddress": "6975 Union Park Ave, Midvale, UT 84047, USA",
+    "fetchedAt": "2026-05-08T16:30:30.067Z"
+  },
+  "awardco|2080 w 400 n, lindon, ut 84042": {
+    "status": "ok",
+    "lat": 40.3469662,
+    "lng": -111.7676103,
+    "confidence": "google",
+    "formattedAddress": "2080 W 400 N, Lindon, UT 84042, USA",
+    "fetchedAt": "2026-05-08T16:30:30.256Z"
+  },
+  "filevine|1260 stringham ave, salt lake city, ut 84106": {
+    "status": "ok",
+    "lat": 40.7205082,
+    "lng": -111.8548038,
+    "confidence": "google",
+    "formattedAddress": "1260 Stringham Ave, Salt Lake City, UT 84106, USA",
+    "fetchedAt": "2026-05-08T16:30:30.457Z"
+  },
+  "snoball|1064 s n county blvd suite 300, pleasant grove, ut 84062": {
+    "status": "ok",
+    "lat": 40.3519632,
+    "lng": -111.7610875,
+    "confidence": "google",
+    "formattedAddress": "1064 S N County Blvd #300, Pleasant Grove, UT 84062, USA",
+    "fetchedAt": "2026-05-08T16:30:30.663Z"
+  },
+  "referpro|1633 w innovation way, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4305894,
+    "lng": -111.8757027,
+    "confidence": "google",
+    "formattedAddress": "1633 W Innovation Way, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:30.847Z"
+  },
+  "deepsee|13907 s minuteman drive, draper, ut 84020": {
+    "status": "ok",
+    "lat": 40.4989775,
+    "lng": -111.8897425,
+    "confidence": "google",
+    "formattedAddress": "13907 Minuteman Dr, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:31.060Z"
+  },
+  "askelephant|12459 s 300 e suite 102 , draper ut 84020": {
+    "status": "ok",
+    "lat": 40.5244923,
+    "lng": -111.8812767,
+    "confidence": "google",
+    "formattedAddress": "12459 S 300 E Suite 102, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:31.230Z"
+  },
+  "whistic|1221 s valley grove way #350, pleasant grove, ut 84062": {
+    "status": "ok",
+    "lat": 40.3497958,
+    "lng": -111.7619924,
+    "confidence": "google",
+    "formattedAddress": "1221 S Valley Grove Way #350, Pleasant Grove, UT 84062, USA",
+    "fetchedAt": "2026-05-08T16:30:31.427Z"
+  },
+  "helperly|9547 s 700 e ste 201 sandy, ut 84070": {
+    "status": "ok",
+    "lat": 40.5778668,
+    "lng": -111.8701814,
+    "confidence": "google",
+    "formattedAddress": "9547 S 700 E #201, Sandy, UT 84070, USA",
+    "fetchedAt": "2026-05-08T16:30:31.631Z"
+  },
+  "lendio|4100 chapel ridge road, suite 500, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4386353,
+    "lng": -111.8926066,
+    "confidence": "google",
+    "formattedAddress": "4100 Chapel Ridge Rd Suite 500, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:31.826Z"
+  },
+  "controlqore|905 n marshall way, suite c layton, utah 84041": {
+    "status": "ok",
+    "lat": 41.0733087,
+    "lng": -111.9975681,
+    "confidence": "google",
+    "formattedAddress": "905 Marshall Way N suite c, Layton, UT 84041, USA",
+    "fetchedAt": "2026-05-08T16:30:32.029Z"
+  },
+  "kuali|3300 north ashton boulevard, lehi, ut 84043, us": {
+    "status": "ok",
+    "lat": 40.4288597,
+    "lng": -111.8929409,
+    "confidence": "google",
+    "formattedAddress": "3300 N Ashton Blvd, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:32.191Z"
+  },
+  "carketa|3400 ashton blvd suite 450 lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4297859,
+    "lng": -111.8941151,
+    "confidence": "google",
+    "formattedAddress": "3400 N Ashton Blvd # 450, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:32.394Z"
+  },
+  "moneta|350 east 400 south, suite 316 salt lake city ut 84111": {
+    "status": "ok",
+    "lat": 40.760409,
+    "lng": -111.881027,
+    "confidence": "google",
+    "formattedAddress": "350 E 400 S #316, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:32.572Z"
+  },
+  "sponsorcx|3401 n thanksgiving way # 190, lehi, utah 84043": {
+    "status": "ok",
+    "lat": 40.4297528,
+    "lng": -111.891888,
+    "confidence": "google",
+    "formattedAddress": "3401 N Thanksgiving Way #190, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:32.774Z"
+  },
+  "mindless labs|1935 e. vine street, ste. 110, salt lake city, utah 84121": {
+    "status": "ok",
+    "lat": 40.640816,
+    "lng": -111.8372271,
+    "confidence": "google",
+    "formattedAddress": "1935 E Vine St #110, Murray, UT 84121, USA",
+    "fetchedAt": "2026-05-08T16:30:32.953Z"
+  },
+  "benji card|1117 e yard row saratoga springs, ut 84045": {
+    "status": "ok",
+    "lat": 40.3659958,
+    "lng": -111.8893832,
+    "confidence": "google",
+    "formattedAddress": "1117 E Yard Row, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:33.188Z"
+  },
+  "jobnimbus|3451 triumph blvd suite 650, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4304122,
+    "lng": -111.8819274,
+    "confidence": "google",
+    "formattedAddress": "3451 Triumph Blvd Suite 650, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:33.349Z"
+  },
+  "cove|14015 minuteman dr draper, ut 84020": {
+    "status": "ok",
+    "lat": 40.49657029999999,
+    "lng": -111.8901144,
+    "confidence": "google",
+    "formattedAddress": "14015 Minuteman Dr, Draper, UT 84020, USA",
+    "fetchedAt": "2026-05-08T16:30:33.601Z"
+  },
+  "guard iq|2575 w 400 n suite 100b, lindon, ut 84042": {
+    "status": "ok",
+    "lat": 40.3437615,
+    "lng": -111.767831,
+    "confidence": "google",
+    "formattedAddress": "2575 W 400 N #100b, Lindon, UT 84042, USA",
+    "fetchedAt": "2026-05-08T16:30:33.845Z"
+  },
+  "enzo health|3300 triumph blvd suites 100 and 200, lehi, ut 84043": {
+    "status": "miss",
+    "fetchedAt": "2026-05-08T16:30:34.031Z",
+    "reason": "No exact Google geocode result."
+  },
+  "pocketbook|1630 n 1770 e, logan, utah 84341": {
+    "status": "ok",
+    "lat": 41.7607356,
+    "lng": -111.7899773,
+    "confidence": "google",
+    "formattedAddress": "1630 N 1770 E, Logan, UT 84341, USA",
+    "fetchedAt": "2026-05-08T16:30:34.236Z"
+  },
+  "neighbor|2600 executive pkwy, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.427778,
+    "lng": -111.8919324,
+    "confidence": "google",
+    "formattedAddress": "2600 W Executive Pkwy, Lehi, UT 84048, USA",
+    "fetchedAt": "2026-05-08T16:30:34.449Z"
+  },
+  "zonos|975 s tech ridge dr, st. george, ut 84770": {
+    "status": "ok",
+    "lat": 37.0903599,
+    "lng": -113.591417,
+    "confidence": "google",
+    "formattedAddress": "975 S Tech Ridge Dr, St. George, UT 84770, USA",
+    "fetchedAt": "2026-05-08T16:30:34.818Z"
+  },
+  "vasion|432 s tech ridge dr, st. george, ut 84770": {
+    "status": "ok",
+    "lat": 37.1009021,
+    "lng": -113.5933068,
+    "confidence": "google",
+    "formattedAddress": "432 S Tech Ridge Dr, St. George, UT 84770, USA",
+    "fetchedAt": "2026-05-08T16:30:35.391Z"
+  },
+  "renew biotechnologies|412 w rivers edge dr, provo, ut 84604": {
+    "status": "ok",
+    "lat": 40.2649912,
+    "lng": -111.6669027,
+    "confidence": "google",
+    "formattedAddress": "412 W Rivers Edge Dr, Provo, UT 84604, USA",
+    "fetchedAt": "2026-05-08T16:30:35.696Z"
+  },
+  "vius|786 divisions road, park city utah 84098": {
+    "status": "ok",
+    "lat": 40.7352384,
+    "lng": -111.4955772,
+    "confidence": "google",
+    "formattedAddress": "786 Division St, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:35.869Z"
+  },
+  "fluid|139 hunter’s grove ln ste 207 lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.3906807,
+    "lng": -111.8277148,
+    "confidence": "google",
+    "formattedAddress": "139 Hunter's Grv Ln #207, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:36.082Z"
+  },
+  "trinsic|2701 north thanksgiving way, ste 100, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4208923,
+    "lng": -111.8816057,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way Ste: 100, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:36.377Z"
+  },
+  "plansight|2500 executive pkwy, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4277419,
+    "lng": -111.889463,
+    "confidence": "google",
+    "formattedAddress": "2500 W Executive Pkwy, Lehi, UT 84048, USA",
+    "fetchedAt": "2026-05-08T16:30:36.593Z"
+  },
+  "salesrabbit|2000 ashton blvd., #450, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4210433,
+    "lng": -111.8827517,
+    "confidence": "google",
+    "formattedAddress": "2000 W Ashton Blvd #450, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:36.902Z"
+  },
+  "mallow|st. george, ut": {
+    "status": "ok",
+    "lat": 37.0965278,
+    "lng": -113.5684164,
+    "confidence": "google",
+    "formattedAddress": "St. George, UT, USA",
+    "fetchedAt": "2026-05-08T16:30:37.075Z"
+  },
+  "relay health|815 w 1250 s, orem, ut 84058": {
+    "status": "ok",
+    "lat": 40.27366079999999,
+    "lng": -111.7153996,
+    "confidence": "google",
+    "formattedAddress": "815 W 1250 S, Orem, UT 84058, USA",
+    "fetchedAt": "2026-05-08T16:30:37.415Z"
+  },
+  "elektrik app inc|1396 w 200 s bldg 2 unit e lindon ut 84042": {
+    "status": "ok",
+    "lat": 40.3343003,
+    "lng": -111.7491362,
+    "confidence": "google",
+    "formattedAddress": "1396 W 200 S St Building #2 Unit E, Lindon, UT 84042, USA",
+    "fetchedAt": "2026-05-08T16:30:37.625Z"
+  },
+  "grain|2701 n thanksgiving way #100, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4208923,
+    "lng": -111.8816057,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way Ste: 100, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:37.840Z"
+  },
+  "alcomy|815 w 1250 s, suite 119, orem, utah 84058": {
+    "status": "ok",
+    "lat": 40.27366079999999,
+    "lng": -111.7153996,
+    "confidence": "google",
+    "formattedAddress": "815 W 1250 S #119, Orem, UT 84058, USA",
+    "fetchedAt": "2026-05-08T16:30:38.031Z"
+  },
+  "devote|155 n 400 w, salt lake city, ut 84101": {
+    "status": "ok",
+    "lat": 40.7722201,
+    "lng": -111.90325,
+    "confidence": "google",
+    "formattedAddress": "155 N 400 W, Salt Lake City, UT 84103, USA",
+    "fetchedAt": "2026-05-08T16:30:38.231Z"
+  },
+  "learnie|705 matterhorn dr. park city, ut 84098": {
+    "status": "ok",
+    "lat": 40.7378496,
+    "lng": -111.6159082,
+    "confidence": "google",
+    "formattedAddress": "705 Matterhorn Dr, Park City, UT 84098, USA",
+    "fetchedAt": "2026-05-08T16:30:38.436Z"
+  },
+  "clientbook|3300 n ashton blvd, suite 175, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4289188,
+    "lng": -111.8930961,
+    "confidence": "google",
+    "formattedAddress": "3300 N Ashton Blvd Suite 175, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:38.631Z"
+  },
+  "addax overland|32 1800 w h, lindon, ut 84042": {
+    "status": "miss",
+    "fetchedAt": "2026-05-08T16:30:38.843Z",
+    "reason": "No exact Google geocode result."
+  },
+  "elizachat|2701 n thanksgiving way #100, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4208923,
+    "lng": -111.8816057,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way Ste: 100, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:38.916Z"
+  },
+  "thymeless enterprises|231 n university ave provo, ut 84601": {
+    "status": "ok",
+    "lat": 40.236821,
+    "lng": -111.6589271,
+    "confidence": "google",
+    "formattedAddress": "231 N University Ave, Provo, UT 84601, USA",
+    "fetchedAt": "2026-05-08T16:30:39.159Z"
+  },
+  "squarepeg|26 s rio grande st #2072, salt lake city, ut 84101": {
+    "status": "ok",
+    "lat": 40.7687836,
+    "lng": -111.9042868,
+    "confidence": "google",
+    "formattedAddress": "26 S Rio Grande St #2072, Salt Lake City, UT 84101, USA",
+    "fetchedAt": "2026-05-08T16:30:39.383Z"
+  },
+  "swell|6510 millrock dr ste 300, holladay, ut 84121": {
+    "status": "ok",
+    "lat": 40.6328663,
+    "lng": -111.8007746,
+    "confidence": "google",
+    "formattedAddress": "6510 Millrock Dr STE 300, Salt Lake City, UT 84121, USA",
+    "fetchedAt": "2026-05-08T16:30:39.577Z"
+  },
+  "monovo|2578 w 600 n, lindon, ut 84042": {
+    "status": "ok",
+    "lat": 40.3498612,
+    "lng": -111.771158,
+    "confidence": "google",
+    "formattedAddress": "2578 W 600 N, Lindon, UT 84042, USA",
+    "fetchedAt": "2026-05-08T16:30:39.767Z"
+  },
+  "adminify ai|1250 e 200 s lehi utah 84043": {
+    "status": "ok",
+    "lat": 40.3850278,
+    "lng": -111.8305885,
+    "confidence": "google",
+    "formattedAddress": "1250 E 200 S, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:39.983Z"
+  },
+  "territories.ai|2701 n thanksgiving way #100, lehi, ut 84043": {
+    "status": "ok",
+    "lat": 40.4208923,
+    "lng": -111.8816057,
+    "confidence": "google",
+    "formattedAddress": "2701 N Thanksgiving Way Ste: 100, Lehi, UT 84043, USA",
+    "fetchedAt": "2026-05-08T16:30:40.056Z"
+  },
+  "spaceagent|2174 s main street, salt lake city, ut 84115": {
+    "status": "ok",
+    "lat": 40.7240411,
+    "lng": -111.8913727,
+    "confidence": "google",
+    "formattedAddress": "2174 S Main St, South Salt Lake, UT 84115, USA",
+    "fetchedAt": "2026-05-08T16:30:40.283Z"
+  },
+  "powerbx|2174 s main street, salt lake city, ut 84115": {
+    "status": "ok",
+    "lat": 40.7240411,
+    "lng": -111.8913727,
+    "confidence": "google",
+    "formattedAddress": "2174 S Main St, South Salt Lake, UT 84115, USA",
+    "fetchedAt": "2026-05-08T16:30:40.355Z"
+  },
+  "therapro.ai|192 n fort ln, layton, ut 84041": {
+    "status": "ok",
+    "lat": 41.0627021,
+    "lng": -111.9572643,
+    "confidence": "google",
+    "formattedAddress": "192 N Fort Ln, Layton, UT 84041, USA",
+    "fetchedAt": "2026-05-08T16:30:40.543Z"
+  },
+  "nodal power inc|250 e 200 s salt lake city ut 84111": {
+    "status": "ok",
+    "lat": 40.7645464,
+    "lng": -111.8845258,
+    "confidence": "google",
+    "formattedAddress": "250 E 200 S, Salt Lake City, UT 84111, USA",
+    "fetchedAt": "2026-05-08T16:30:40.724Z"
+  },
+  "codex test labs|utah": {
+    "status": "ok",
+    "lat": 40.7606608,
+    "lng": -111.8939487,
+    "confidence": "google",
+    "formattedAddress": "Utah, USA",
+    "fetchedAt": "2026-05-08T20:32:24.797Z"
+  }
+}
