@@ -1570,6 +1570,11 @@ button {
   inset: 0;
 }
 
+.google-map-canvas {
+  cursor: grab;
+  touch-action: none;
+}
+
 .fallback-map {
   background:
     linear-gradient(90deg, rgba(22, 33, 31, 0.08) 1px, transparent 1px),
@@ -1577,6 +1582,13 @@ button {
     radial-gradient(circle at 55% 42%, rgba(13, 143, 140, 0.1), transparent 34%),
     #eef5ef;
   background-size: 48px 48px, 48px 48px, auto, auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.fallback-map.dragging {
+  cursor: grabbing;
 }
 
 .fallback-map__plane {
@@ -1609,19 +1621,49 @@ button {
   border-radius: 999px;
   background: var(--redrock);
   box-shadow: 0 6px 12px rgba(22, 33, 31, 0.24);
+  cursor: pointer;
+}
+
+.map-pin img,
+.map-pin span {
+  width: 100%;
+  height: 100%;
 }
 
 .map-pin img {
-  width: 100%;
-  height: 100%;
   object-fit: contain;
   background: #fff;
+}
+
+.map-pin span {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 7px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .map-pin.active {
   width: 20px;
   height: 20px;
   background: var(--teal);
+}
+
+.map-pin.cluster {
+  width: 24px;
+  height: 24px;
+  background: #f08a1f;
+}
+
+.map-pin.cluster span {
+  font-size: 9px;
+}
+
+.map-pin.hiring {
+  box-shadow:
+    0 0 0 4px rgba(199, 149, 50, 0.24),
+    0 6px 12px rgba(22, 33, 31, 0.24);
 }
 
 .google-startup-marker {

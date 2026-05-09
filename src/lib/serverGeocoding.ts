@@ -86,6 +86,7 @@ export async function ensureServerGeocodes(companies: Company[]) {
 function locationsFromCache(companies: Company[], cache: Record<string, CachedGeocode>) {
   const locations: ServerGeocodedLocations = {};
   for (const company of companies) {
+    if (!isGeocodableCompany(company)) continue;
     const cached = cache[geocodeCacheKey(company)];
     if (cached?.status === "ok") {
       locations[company.slug] = {

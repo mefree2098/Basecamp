@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import Link from "next/link";
 import {
   Bookmark,
@@ -32,6 +39,7 @@ import type { ClientIntegrationSettings, Company } from "@/lib/types";
 type Facet = { label: string; count: number };
 type AppTheme = "classic" | "tech";
 type MapPosition = { lat: number; lng: number };
+type FallbackMapPan = { x: number; y: number };
 type CompanyMapLocation = MapPosition & {
   confidence: Company["coordinates"]["confidence"] | "google";
   formattedAddress?: string;
@@ -42,7 +50,9 @@ type GoogleMap = {
   fitBounds: (bounds: GoogleLatLngBounds) => void;
   getStreetView: () => GoogleStreetViewPanorama;
   getZoom: () => number | undefined;
+  panBy: (x: number, y: number) => void;
   panTo: (position: MapPosition) => void;
+  setCenter: (position: MapPosition) => void;
   setMapTypeId: (type: "roadmap" | "satellite") => void;
   setOptions: (options: GoogleMapOptions) => void;
   setZoom: (zoom: number) => void;
@@ -51,19 +61,39 @@ type GoogleLatLngBounds = {
   extend: (position: GoogleLatLng | MapPosition) => void;
   isEmpty: () => boolean;
 };
-type GooglePoint = { x: number; y: number };
-type GoogleProjection = {
-  fromLatLngToDivPixel: (position: GoogleLatLng) => GooglePoint | null;
+type GoogleMapsEventListener = {
+  remove: () => void;
 };
-type GooglePanes = {
-  overlayMouseTarget: Element;
+type GoogleMarkerLabel = {
+  text: string;
+  color: string;
+  fontSize: string;
+  fontWeight: string;
 };
-type GoogleOverlayView = {
-  getPanes: () => GooglePanes | null;
-  getProjection: () => GoogleProjection;
+type GoogleMarkerIcon = {
+  path: string | number;
+  fillColor: string;
+  fillOpacity: number;
+  strokeColor: string;
+  strokeWeight: number;
+  scale: number;
+};
+type GoogleMarkerOptions = {
+  clickable?: boolean;
+  icon?: GoogleMarkerIcon;
+  label?: GoogleMarkerLabel;
+  map?: GoogleMap;
+  optimized?: boolean;
+  position: MapPosition;
+  title: string;
+  zIndex?: number;
+};
+type GoogleMarker = {
+  addListener: (name: "click", handler: () => void) => GoogleMapsEventListener;
   setMap: (map: GoogleMap | null) => void;
+  setOptions: (options: GoogleMarkerOptions) => void;
 };
-type GoogleOverlayViewConstructor = new () => GoogleOverlayView;
+type GoogleMarkerConstructor = new (options: GoogleMarkerOptions) => GoogleMarker;
 type GoogleLatLngConstructor = new (lat: number, lng: number) => GoogleLatLng;
 type CoreLibrary = {
   LatLng: GoogleLatLngConstructor;
@@ -71,7 +101,6 @@ type CoreLibrary = {
 };
 type MapsLibrary = {
   Map: new (element: HTMLElement, options: GoogleMapOptions) => GoogleMap;
-  OverlayView: GoogleOverlayViewConstructor;
 };
 type GeocoderLocation = {
   lat: () => number;
@@ -119,6 +148,10 @@ type StreetViewLibrary = {
 };
 type GoogleMapsNamespace = {
   maps: {
+    Marker?: GoogleMarkerConstructor;
+    SymbolPath?: {
+      CIRCLE: string | number;
+    };
     importLibrary: (
       name: "core" | "maps" | "geocoding" | "streetView"
     ) => Promise<CoreLibrary | MapsLibrary | GeocodingLibrary | StreetViewLibrary>;
@@ -129,14 +162,11 @@ type GoogleMapsWindow = Window & {
   gm_authFailure?: () => void;
   __basecampGoogleMapsReady?: () => void;
 };
-type StartupOverlayInstance = GoogleOverlayView & {
-  update: (item: MapOverlayItem, active: boolean) => void;
+type StartupMarkerEntry = {
+  item: MapOverlayItem;
+  listener: GoogleMapsEventListener;
+  marker: GoogleMarker;
 };
-type StartupOverlayConstructor = new (
-  item: MapOverlayItem,
-  active: boolean,
-  onSelect: (item: MapOverlayItem) => void
-) => StartupOverlayInstance;
 type MapOverlayItem = {
   id: string;
   company: Company;
@@ -162,11 +192,12 @@ const bakedGoogleMapsTechMapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_TECH_MAP_ID
 const GEOCODE_CACHE_KEY = "basecamp.googleGeocodes.v1";
 const GOOGLE_MAPS_CALLBACK = "__basecampGoogleMapsReady";
 const UTAH_CENTER = { lat: 40.35, lng: -111.84 };
+// Keep Utah centered while leaving enough buffer for drag exploration at statewide zoom.
 const UTAH_BOUNDS = {
-  north: 42.1,
-  south: 36.9,
-  west: -114.15,
-  east: -109.0
+  north: 44.4,
+  south: 34.5,
+  west: -117.5,
+  east: -106.0
 };
 const TECH_GOOGLE_MAP_STYLES: GoogleMapStyle[] = [
   { elementType: "geometry", stylers: [{ color: "#06101f" }] },
@@ -250,6 +281,7 @@ export function StartupMap({
     readStoredStringArray("basecamp.savedCompanies")
   );
   const [fallbackZoom, setFallbackZoom] = useState(1);
+  const [fallbackPan, setFallbackPan] = useState<FallbackMapPan>({ x: 0, y: 0 });
   const [companyIcons, setCompanyIcons] = useState(initialCompanyIcons);
   const [geocodedLocations, setGeocodedLocations] = useState<
     Record<string, CompanyMapLocation>
@@ -261,9 +293,19 @@ export function StartupMap({
   const streetViewServiceRef = useRef<StreetViewService | null>(null);
   const latLngRef = useRef<GoogleLatLngConstructor | null>(null);
   const boundsRef = useRef<CoreLibrary["LatLngBounds"] | null>(null);
-  const overlayConstructorRef = useRef<StartupOverlayConstructor | null>(null);
-  const overlaysRef = useRef<Map<string, StartupOverlayInstance>>(new Map());
+  const markerConstructorRef = useRef<GoogleMarkerConstructor | null>(null);
+  const markerCirclePathRef = useRef<string | number>(
+    "M 0,0 m -10,0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0"
+  );
+  const markersRef = useRef<Map<string, StartupMarkerEntry>>(new Map());
+  const googleDragRef = useRef<{
+    pointerId: number;
+    lastX: number;
+    lastY: number;
+  } | null>(null);
   const geocodedLocationsRef = useRef<Record<string, CompanyMapLocation>>({});
+  const mapItemsRef = useRef<MapOverlayItem[]>([]);
+  const selectMapItemRef = useRef<(item: MapOverlayItem) => void>(() => undefined);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -298,8 +340,9 @@ export function StartupMap({
     () => buildMapOverlayItems(filtered, geocodedLocations, companyIcons),
     [filtered, geocodedLocations, companyIcons]
   );
-  const selectedCluster =
-    activeClusterId && mapItems.find((item) => item.id === activeClusterId && item.count > 1);
+  const selectedCluster = activeClusterId
+    ? mapItems.find((item) => item.id === activeClusterId && item.count > 1)
+    : undefined;
   const clusterCompanies = useMemo(
     () =>
       selectedCluster
@@ -356,10 +399,10 @@ export function StartupMap({
   const selectMapItem = useCallback((item: MapOverlayItem) => {
     if (item.count > 1) {
       setActiveClusterId(item.id);
-      setSelectedSlug("");
-      setProfileDrawerOpen(false);
+      setSelectedSlug(item.company.slug);
+      setProfileDrawerOpen(true);
       setMapStatus(
-        `${item.count.toLocaleString()} startups grouped near ${item.company.location || "this area"}.`
+        `${item.count.toLocaleString()} startups grouped near ${item.company.location || "this area"}. Opened the first profile in this cluster.`
       );
       return;
     }
@@ -367,6 +410,88 @@ export function StartupMap({
     setSelectedSlug(item.company.slug);
     setProfileDrawerOpen(true);
   }, []);
+
+  useEffect(() => {
+    mapItemsRef.current = mapItems;
+  }, [mapItems]);
+
+  useEffect(() => {
+    selectMapItemRef.current = selectMapItem;
+  }, [selectMapItem]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    const selectMarkerFromEvent = (event: MouseEvent | PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      const marker = target?.closest<HTMLElement>("[title]");
+      if (!marker || !mapElementRef.current?.contains(marker)) return;
+      const item = mapItemsRef.current.find((candidate) => marker.title === markerLabel(candidate));
+      if (!item) return;
+      event.preventDefault();
+      event.stopPropagation();
+      selectMapItemRef.current(item);
+    };
+    document.addEventListener("click", selectMarkerFromEvent, true);
+    document.addEventListener("pointerup", selectMarkerFromEvent, true);
+    return () => {
+      document.removeEventListener("click", selectMarkerFromEvent, true);
+      document.removeEventListener("pointerup", selectMarkerFromEvent, true);
+    };
+  }, [mapReady]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !mapElementRef.current) return;
+    const map = mapRef.current;
+    const element = mapElementRef.current;
+
+    const endDrag = (event: PointerEvent) => {
+      const drag = googleDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      googleDragRef.current = null;
+      if (element.hasPointerCapture(event.pointerId)) {
+        element.releasePointerCapture(event.pointerId);
+      }
+    };
+
+    const startDrag = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("a, button, [role='button'], [title^='Select '], [title^='Open cluster']")) {
+        return;
+      }
+      googleDragRef.current = {
+        pointerId: event.pointerId,
+        lastX: event.clientX,
+        lastY: event.clientY
+      };
+      element.setPointerCapture(event.pointerId);
+    };
+
+    const moveDrag = (event: PointerEvent) => {
+      const drag = googleDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const deltaX = event.clientX - drag.lastX;
+      const deltaY = event.clientY - drag.lastY;
+      if (Math.abs(deltaX) + Math.abs(deltaY) < 1) return;
+      map.panBy(-deltaX, -deltaY);
+      drag.lastX = event.clientX;
+      drag.lastY = event.clientY;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    element.addEventListener("pointerdown", startDrag, true);
+    element.addEventListener("pointermove", moveDrag, true);
+    element.addEventListener("pointerup", endDrag, true);
+    element.addEventListener("pointercancel", endDrag, true);
+    return () => {
+      element.removeEventListener("pointerdown", startDrag, true);
+      element.removeEventListener("pointermove", moveDrag, true);
+      element.removeEventListener("pointerup", endDrag, true);
+      element.removeEventListener("pointercancel", endDrag, true);
+      googleDragRef.current = null;
+    };
+  }, [mapReady]);
 
   function resetFilters() {
     setQ("");
@@ -376,6 +501,7 @@ export function StartupMap({
     setLocation("");
     setHiring("");
     setActiveClusterId("");
+    setFallbackPan({ x: 0, y: 0 });
   }
 
   function saveCurrentCompany() {
@@ -508,10 +634,12 @@ export function StartupMap({
 
         latLngRef.current = coreLibrary.LatLng;
         boundsRef.current = coreLibrary.LatLngBounds;
-        overlayConstructorRef.current = createStartupOverlayClass(
-          mapsLibrary.OverlayView,
-          coreLibrary.LatLng
-        );
+        if (!mapsWindow.google.maps.Marker) {
+          throw new Error("Google Maps Marker library did not initialize.");
+        }
+        markerConstructorRef.current = mapsWindow.google.maps.Marker;
+        markerCirclePathRef.current =
+          mapsWindow.google.maps.SymbolPath?.CIRCLE ?? markerCirclePathRef.current;
         geocoderRef.current = new geocodingLibrary.Geocoder();
         streetViewServiceRef.current = new streetViewLibrary.StreetViewService();
 
@@ -556,23 +684,27 @@ export function StartupMap({
   }, [compact, configuredGoogleMapsMapId, configuredGoogleMapsTechMapId, googleMapsApiKey, theme]);
 
   useEffect(() => {
-    const overlays = overlaysRef.current;
+    const markers = markersRef.current;
     return () => {
-      overlays.forEach((overlay) => overlay.setMap(null));
-      overlays.clear();
+      markers.forEach(({ listener, marker }) => {
+        listener.remove();
+        marker.setMap(null);
+      });
+      markers.clear();
     };
   }, []);
 
   useEffect(() => {
-    if (!mapReady || !mapRef.current || !overlayConstructorRef.current) return;
+    if (!mapReady || !mapRef.current || !markerConstructorRef.current) return;
     const map = mapRef.current;
-    const Overlay = overlayConstructorRef.current;
+    const Marker = markerConstructorRef.current;
     const visibleIds = new Set(mapItems.map((item) => item.id));
 
-    overlaysRef.current.forEach((overlay, id) => {
+    markersRef.current.forEach((entry, id) => {
       if (!visibleIds.has(id)) {
-        overlay.setMap(null);
-        overlaysRef.current.delete(id);
+        entry.listener.remove();
+        entry.marker.setMap(null);
+        markersRef.current.delete(id);
       }
     });
 
@@ -581,16 +713,21 @@ export function StartupMap({
         (selected && item.slugs.includes(selected.slug)) ||
           (selectedCluster && item.id === selectedCluster.id)
       );
-      const existing = overlaysRef.current.get(item.id);
+      const options = googleMarkerOptions(item, active, map, markerCirclePathRef.current);
+      const existing = markersRef.current.get(item.id);
       if (existing) {
-        existing.update(item, active);
+        existing.item = item;
+        existing.marker.setOptions(options);
         return;
       }
-      const overlay = new Overlay(item, active, selectMapItem);
-      overlay.setMap(map);
-      overlaysRef.current.set(item.id, overlay);
+      const marker = new Marker(options);
+      const listener = marker.addListener("click", () => {
+        const current = markersRef.current.get(item.id)?.item ?? item;
+        selectMapItemRef.current(current);
+      });
+      markersRef.current.set(item.id, { item, listener, marker });
     });
-  }, [mapItems, mapReady, selectMapItem, selected, selectedCluster]);
+  }, [mapItems, mapReady, selected, selectedCluster]);
 
   useEffect(() => {
     if (!activeClusterId || selectedCluster) return;
@@ -616,6 +753,12 @@ export function StartupMap({
     const Bounds = boundsRef.current;
     const LatLng = latLngRef.current;
     if (!mapReady || !mapRef.current || !Bounds || !LatLng) return;
+    if (filtered.length === 1) {
+      const position = mapLocationForCompany(filtered[0], geocodedLocations);
+      mapRef.current.setZoom(13);
+      mapRef.current.setCenter(position);
+      return;
+    }
     const bounds = new Bounds();
     filtered.forEach((company) => {
       const position = mapLocationForCompany(company, geocodedLocations);
@@ -715,6 +858,7 @@ export function StartupMap({
     const LatLng = latLngRef.current;
     if (!mapRef.current || !Bounds || !LatLng) {
       setFallbackZoom(1);
+      setFallbackPan({ x: 0, y: 0 });
       return;
     }
     const bounds = new Bounds();
@@ -940,12 +1084,13 @@ export function StartupMap({
             <div ref={mapElementRef} className="google-map-canvas" />
           ) : (
             <FallbackStartupMap
-              companies={filtered}
-              geocodedLocations={geocodedLocations}
-              companyIcons={companyIcons}
+              items={mapItems}
               selectedSlug={selected?.slug ?? ""}
+              selectedClusterId={selectedCluster?.id ?? ""}
               zoom={fallbackZoom}
-              onSelect={selectCompany}
+              pan={fallbackPan}
+              onPan={setFallbackPan}
+              onSelect={selectMapItem}
             />
           )}
 
@@ -1157,41 +1302,95 @@ export function StartupMap({
 }
 
 function FallbackStartupMap({
-  companies,
-  geocodedLocations,
-  companyIcons,
+  items,
   selectedSlug,
+  selectedClusterId,
   zoom,
+  pan,
+  onPan,
   onSelect
 }: {
-  companies: Company[];
-  geocodedLocations: Record<string, CompanyMapLocation>;
-  companyIcons: Record<string, CompanyIconView>;
+  items: MapOverlayItem[];
   selectedSlug: string;
+  selectedClusterId: string;
   zoom: number;
-  onSelect: (slug: string) => void;
+  pan: FallbackMapPan;
+  onPan: (pan: FallbackMapPan) => void;
+  onSelect: (item: MapOverlayItem) => void;
 }) {
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    origin: FallbackMapPan;
+  } | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  function startDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if ((event.target as HTMLElement).closest("button")) return;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      origin: pan
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragging(true);
+  }
+
+  function moveDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    onPan({
+      x: drag.origin.x + event.clientX - drag.startX,
+      y: drag.origin.y + event.clientY - drag.startY
+    });
+  }
+
+  function endDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setDragging(false);
+  }
+
   return (
-    <div className="fallback-map">
-      <div className="fallback-map__plane" style={{ transform: `scale(${zoom})` }}>
+    <div
+      className={dragging ? "fallback-map dragging" : "fallback-map"}
+      onPointerDown={startDrag}
+      onPointerMove={moveDrag}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+    >
+      <div
+        className="fallback-map__plane"
+        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+      >
         <div className="utah-map-shape" />
-        {companies.slice(0, 220).map((company) => {
-          const position = mapLocationForCompany(company, geocodedLocations);
+        {items.map((item) => {
+          const position = item.position;
           const point = projectUtahPoint(position.lat, position.lng);
-          const active = selectedSlug === company.slug;
+          const active =
+            item.slugs.includes(selectedSlug) || Boolean(selectedClusterId && item.id === selectedClusterId);
           return (
             <button
-              key={company.slug}
-              className={active ? "map-pin active" : "map-pin"}
+              key={item.id}
+              className={fallbackMarkerClassName(item, active)}
               style={{ left: `${point.x}%`, top: `${point.y}%` }}
               type="button"
-              aria-label={`Select ${company.name}`}
-              onClick={() => onSelect(company.slug)}
+              aria-label={markerLabel(item)}
+              title={markerLabel(item)}
+              onClick={() => onSelect(item)}
             >
-              {companyIcons[company.slug]?.url ? (
+              {item.iconUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={companyIcons[company.slug]?.url} alt="" />
-              ) : null}
+                <img src={item.iconUrl} alt="" />
+              ) : (
+                <span>{item.count > 1 ? item.count.toLocaleString() : initialsForCompany(item.company.name)}</span>
+              )}
             </button>
           );
         })}
@@ -1251,90 +1450,55 @@ function MapSelect({
   );
 }
 
-function createStartupOverlayClass(
-  OverlayView: GoogleOverlayViewConstructor,
-  LatLng: GoogleLatLngConstructor
-): StartupOverlayConstructor {
-  class StartupOverlay extends OverlayView {
-    private item: MapOverlayItem;
-    private active: boolean;
-    private button: HTMLButtonElement | null = null;
-    private readonly onSelect: (item: MapOverlayItem) => void;
-
-    constructor(
-      item: MapOverlayItem,
-      active: boolean,
-      onSelect: (item: MapOverlayItem) => void
-    ) {
-      super();
-      this.item = item;
-      this.active = active;
-      this.onSelect = onSelect;
-    }
-
-    onAdd() {
-      this.button = document.createElement("button");
-      this.button.type = "button";
-      this.button.className = markerClassName(this.item, this.active);
-      this.button.setAttribute("aria-label", markerLabel(this.item));
-      this.button.title = markerLabel(this.item);
-      this.button.addEventListener("click", this.handleClick);
-      renderMarkerContent(this.button, this.item);
-      this.getPanes()?.overlayMouseTarget.appendChild(this.button);
-    }
-
-    draw() {
-      if (!this.button) return;
-      const projection = this.getProjection();
-      const point = projection.fromLatLngToDivPixel(
-        new LatLng(this.item.position.lat, this.item.position.lng)
-      );
-      if (!point) {
-        this.button.style.display = "none";
-        return;
-      }
-      this.button.style.display = "grid";
-      this.button.style.left = `${point.x}px`;
-      this.button.style.top = `${point.y}px`;
-      this.button.style.zIndex = markerZIndex(this.item, this.active);
-    }
-
-    onRemove() {
-      this.button?.removeEventListener("click", this.handleClick);
-      this.button?.remove();
-      this.button = null;
-    }
-
-    update(item: MapOverlayItem, active: boolean) {
-      this.item = item;
-      this.active = active;
-      if (this.button) {
-        this.button.className = markerClassName(item, active);
-        this.button.setAttribute("aria-label", markerLabel(item));
-        this.button.title = markerLabel(item);
-        renderMarkerContent(this.button, item);
-      }
-      this.draw();
-    }
-
-    private readonly handleClick = () => {
-      this.onSelect(this.item);
-    };
-  }
-
-  return StartupOverlay as StartupOverlayConstructor;
-}
-
-function markerClassName(item: MapOverlayItem, active: boolean) {
+function fallbackMarkerClassName(item: MapOverlayItem, active: boolean) {
   return [
-    "google-startup-marker",
+    "map-pin",
     active ? "active" : "",
-    item.position.confidence === "google" ? "verified" : "",
-    item.company.hiringStatus === "hiring" ? "hiring" : "",
-    item.count > 1 ? "cluster" : ""
+    item.count > 1 ? "cluster" : "",
+    item.company.hiringStatus === "hiring" ? "hiring" : ""
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+function googleMarkerOptions(
+  item: MapOverlayItem,
+  active: boolean,
+  map: GoogleMap,
+  circlePath: string | number
+): GoogleMarkerOptions {
+  const clustered = item.count > 1;
+  const fillColor = active
+    ? "#16211f"
+    : clustered
+      ? "#f08a1f"
+      : item.company.hiringStatus === "hiring"
+        ? "#c79532"
+        : item.position.confidence === "google" || item.position.confidence === "source"
+          ? "#0d8f8c"
+          : "#eb4d42";
+  return {
+    clickable: true,
+    icon: {
+      path: circlePath,
+      fillColor,
+      fillOpacity: 1,
+      strokeColor: "#ffffff",
+      strokeWeight: active ? 3 : 2,
+      scale: active ? 12 : clustered ? 10 : 8
+    },
+    label: {
+      text: clustered ? String(item.count) : initialsForCompany(item.company.name),
+      color: "#ffffff",
+      fontSize: clustered ? "11px" : "9px",
+      fontWeight: "900"
+    },
+    map,
+    optimized: true,
+    position: item.position,
+    title: markerLabel(item),
+    zIndex: markerZIndex(item, active)
+  };
 }
 
 function markerLabel(item: MapOverlayItem) {
@@ -1343,9 +1507,9 @@ function markerLabel(item: MapOverlayItem) {
 }
 
 function markerZIndex(item: MapOverlayItem, active: boolean) {
-  if (active) return "90";
-  if (item.count > 1) return String(20 + Math.min(item.count, 60));
-  return item.position.confidence === "google" ? "8" : "4";
+  if (active) return 90;
+  if (item.count > 1) return 20 + Math.min(item.count, 60);
+  return item.position.confidence === "google" || item.position.confidence === "source" ? 8 : 4;
 }
 
 function initialsForCompany(name: string) {
@@ -1368,26 +1532,6 @@ function mapLocationForCompany(
       confidence: company.coordinates.confidence
     }
   );
-}
-
-function renderMarkerContent(button: HTMLButtonElement, item: MapOverlayItem) {
-  button.replaceChildren();
-  const label = document.createElement("span");
-  label.textContent = item.count > 1 ? String(item.count) : initialsForCompany(item.company.name);
-  if (item.count === 1 && item.iconUrl) {
-    const image = document.createElement("img");
-    image.src = item.iconUrl;
-    image.alt = "";
-    image.loading = "lazy";
-    image.addEventListener("error", () => {
-      image.remove();
-      label.hidden = false;
-    });
-    label.hidden = true;
-    button.append(image, label);
-    return;
-  }
-  button.appendChild(label);
 }
 
 function buildMapOverlayItems(
