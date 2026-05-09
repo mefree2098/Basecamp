@@ -5,7 +5,7 @@
   "description": "Basecamp founder navigation and startup map platform for Startup State.",
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/ensure-build-dependencies.js && NEXT_TELEMETRY_DISABLED=1 next build --webpack && node scripts/prepare-standalone.js",
+    "build": "node scripts/ensure-build-dependencies.js && NODE_OPTIONS=--max-old-space-size=1536 NEXT_TELEMETRY_DISABLED=1 next build --webpack && node scripts/prepare-standalone.js",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "rm -rf .next/types .next/dev/types && tsc --noEmit",
