@@ -39,7 +39,9 @@ export function inferStageFromText(input: string, fallback: FounderStage): Found
     return "validate";
   }
   if (/\b(idea|brainstorm|thinking about|exploring)\b/.test(text)) return "idea";
-  if (/\b(start|launch|register|license|licence|llc|ein|permit|open)\b/.test(text)) return "start";
+  if (/\b(start|launch|register|licens\w*|licence|llc|ein|permit|open|opening)\b/.test(text)) {
+    return "start";
+  }
   return fallback;
 }
 
@@ -51,6 +53,7 @@ export function hasIdeaFirstStepIntent(input: string) {
 
 export function hasFundingIntent(input: string) {
   const text = input.toLowerCase();
+  if (hasFundingNegation(text)) return false;
   if (
     /\b(fund|funding|grant|loan|capital|investors?|investment|pitch|raise|raising|raised|round|venture|vcs?|angels?|series\s+[abc]|term sheet|runway)\b/i.test(
       text
@@ -68,6 +71,7 @@ export function hasFundingIntent(input: string) {
 
 export function hasVentureCapitalIntent(input: string) {
   const text = input.toLowerCase();
+  if (hasFundingNegation(text)) return false;
   if (
     /\b(venture|vcs?|angels?|investors?|investment|raise|raising|raised|round|series\s+[abc]|term sheet|equity)\b/i.test(
       text
@@ -84,7 +88,14 @@ export function hasVentureCapitalIntent(input: string) {
 }
 
 export function hasAngelGroupIntent(input: string) {
+  if (hasFundingNegation(input)) return false;
   return /\b(angel|angels|angel groups?|angel investors?)\b/i.test(input);
+}
+
+function hasFundingNegation(input: string) {
+  return /\b(?:not|no|without|don't|do not)\s+(?:yet\s+)?(?:(?:need|want|looking for|seeking|ready for|chasing|pursuing)\s+)?(?:investors?|funding|capital|investment|raise|raising|venture|vcs?|angels?)\b/i.test(
+    input
+  );
 }
 
 export function hasInternationalExpansionIntent(input: string) {

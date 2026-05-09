@@ -378,6 +378,103 @@ describe("required Startup State persona routing", () => {
   });
 });
 
+describe("custom Founder Wizard QA scenarios", () => {
+  it("routes an Ogden food-truck founder to licensing and local startup setup, not capital", async () => {
+    resetDataCachesForTests();
+    const response = await runCustomFounderScenario({
+      message:
+        "I am opening a food truck in Ogden and need permits, licensing, registration, and someone local to call before I start selling.",
+      profile: {
+        stage: "start",
+        industry: "Hospitality and Food Services",
+        county: "Weber",
+        community: "Any",
+        goal: "",
+        mode: "chat"
+      }
+    });
+
+    expect(response.planCards[0]?.title).toContain("Choose a business name");
+    expect(topIds(response).slice(0, 3)).toContain("basecamp-startup-state-registration");
+    expect(response.assistantMessage).toContain("working startup plan");
+    expect(topTitles(response).slice(0, 6).join(" ")).not.toMatch(/Angels|Venture|VC/);
+    expect(response.assistantMessage).not.toContain("capital-readiness plan");
+  });
+
+  it("routes a growth-stage defense manufacturer toward contracts and workforce help", async () => {
+    resetDataCachesForTests();
+    const response = await runCustomFounderScenario({
+      message:
+        "We run an aerospace and defense parts manufacturer in Davis County with 35 employees. We need help winning government contracts and training workers for growth.",
+      profile: {
+        stage: "grow",
+        industry: "Aerospace and Defense",
+        county: "Davis",
+        community: "Any",
+        goal: "",
+        mode: "chat"
+      }
+    });
+
+    const titles = topTitles(response).join(" ");
+
+    expect(response.planCards[0]?.title).toContain("growth bottleneck");
+    expect(titles).toMatch(/APEX Accelerator/);
+    expect(titles).toMatch(/Custom Fit Training|Talent Ready Utah|Apprenticeship Utah|Workforce/);
+    expect(response.assistantMessage).not.toContain("business bank account");
+  });
+
+  it("keeps an inclusive Salt Lake childcare founder on formation plus community support", async () => {
+    resetDataCachesForTests();
+    const response = await runCustomFounderScenario({
+      message:
+        "I am a New American woman in Salt Lake City opening a childcare service. I need a business plan, licensing help, and mentorship.",
+      profile: {
+        stage: "start",
+        industry: "Hospitality and Food Services",
+        county: "Salt Lake",
+        community: "New American",
+        goal: "",
+        mode: "chat"
+      }
+    });
+
+    const resourceText = topResourceText(response);
+
+    expect(response.planCards[0]?.title).toContain("Choose a business name");
+    expect(topIds(response).slice(0, 5)).toContain("basecamp-startup-state-registration");
+    expect(topTitles(response).slice(1, 4).join(" ")).toMatch(
+      /Women's Business Center|Suazo|Hispanic/
+    );
+    expect(topTitles(response).slice(0, 5).join(" ")).toMatch(
+      /Women's Business Center|Suazo|Hispanic|Asian|Black|Pacific Island|LiaLaunch|Bolder/
+    );
+    expect(resourceText).toMatch(/Suazo|Hispanic|New American|Multicultural|Women|SBDC|SCORE/);
+    expect(response.assistantMessage).not.toContain("capital-readiness plan");
+  });
+
+  it("routes a Moab owner closing or selling a business to exit obligations", async () => {
+    resetDataCachesForTests();
+    const response = await runCustomFounderScenario({
+      message:
+        "I need to close or sell my small retail business in Moab and understand tax, licensing, and employee obligations.",
+      profile: {
+        stage: "exit",
+        industry: "Consumer Packaged Goods",
+        county: "Grand",
+        community: "Any",
+        goal: "",
+        mode: "chat"
+      }
+    });
+
+    expect(response.planCards[0]?.title).toContain("sale, succession, closure");
+    expect(response.assistantMessage).toContain("working founder plan");
+    expect(topResourceText(response)).toMatch(/Close or Exit a Business|tax|licens|advisor|agency/i);
+    expect(response.assistantMessage).not.toContain("capital-readiness plan");
+  });
+});
+
 function formationResource(id: string, title: string, description: string, link: string): Resource {
   return {
     id,
@@ -499,6 +596,10 @@ function topTitles(response: Awaited<ReturnType<typeof runWizardTurn>>) {
   return response.recommendations.slice(0, 7).map((item) => item.resource.title);
 }
 
+function topIds(response: Awaited<ReturnType<typeof runWizardTurn>>) {
+  return response.recommendations.slice(0, 7).map((item) => item.resource.id);
+}
+
 function topResourceText(response: Awaited<ReturnType<typeof runWizardTurn>>) {
   return response.recommendations
     .slice(0, 7)
@@ -506,10 +607,26 @@ function topResourceText(response: Awaited<ReturnType<typeof runWizardTurn>>) {
       [
         item.resource.title,
         item.resource.description,
+        ...item.resource.topics,
         ...item.resource.communities,
         ...item.resource.locations,
         ...item.resource.industries
       ].join(" ")
     )
     .join(" ");
+}
+
+function runCustomFounderScenario({
+  message,
+  profile
+}: {
+  message: string;
+  profile: FounderProfile;
+}) {
+  return runWizardTurn({
+    settings: { provider: "mock", model: "basecamp-local-guide", thinkingLevel: "medium" },
+    profile: { ...profile, goal: message },
+    message,
+    resources: loadResources()
+  });
 }

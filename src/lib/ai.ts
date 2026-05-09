@@ -482,6 +482,13 @@ function findSpecializedFormationRecommendation(
       )
     );
   }
+  if (/new american|immigrant|refugee|multicultural|minority|asian|latino|hispanic|pacific islander|black|woman|women|female/.test(text)) {
+    return recommendations.find((item) =>
+      /women|woman|female|suazo|hispanic|asian|black|pacific island|multicultural|new american|immigrant|refugee|lialaunch|bolder/i.test(
+        `${item.resource.title} ${item.resource.description} ${item.resource.communities.join(" ")}`
+      )
+    );
+  }
   return undefined;
 }
 
@@ -491,6 +498,11 @@ function formationContextLabel(profile: FounderProfile) {
     return "veteran manufacturing";
   }
   if (/veteran|military/.test(text)) return "veteran";
+  if (/new american|immigrant|refugee/.test(text)) return "New American";
+  if (/multicultural|minority|asian|latino|hispanic|pacific islander|black/.test(text)) {
+    return "multicultural";
+  }
+  if (/woman|women|female/.test(text)) return "women founder";
   return "founder";
 }
 

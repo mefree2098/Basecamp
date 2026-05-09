@@ -30,6 +30,7 @@ const cityCoordinates: Record<string, { lat: number; lng: number; label: string 
   "south jordan": { lat: 40.5622, lng: -111.9297, label: "South Jordan" },
   "south salt lake": { lat: 40.7188, lng: -111.8883, label: "South Salt Lake" },
   "spanish fork": { lat: 40.1149, lng: -111.6549, label: "Spanish Fork" },
+  "st george": { lat: 37.0965, lng: -113.5684, label: "St. George" },
   "st. george": { lat: 37.0965, lng: -113.5684, label: "St. George" },
   taylorsville: { lat: 40.6677, lng: -111.9388, label: "Taylorsville" },
   vineyard: { lat: 40.297, lng: -111.7466, label: "Vineyard" },

@@ -276,7 +276,7 @@ export function StartupMap({
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
   const [activeClusterId, setActiveClusterId] = useState("");
   const [showExtraContent, setShowExtraContent] = useState(() =>
-    readStoredBoolean("basecamp.map.showExtraContent", true)
+    readStoredBoolean("basecamp.map.showExtraContent", false)
   );
   const [theme, setTheme] = useState<AppTheme>(() => readStoredTheme());
   const [savedSlugs, setSavedSlugs] = useState<string[]>(() =>

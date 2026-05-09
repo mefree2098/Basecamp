@@ -366,7 +366,7 @@ function mergeCompanyOverrides(companies: Company[]) {
         displayType: row.displayType ?? "profile",
         linkedin: row.linkedin,
         address,
-        location: row.location ?? locationForAddress(address) ?? "Utah",
+        location: normalizeLocationLabel(row.location) || locationForAddress(address) || "Utah",
         description: row.description ?? "",
         website: row.website,
         stage: row.stage,
@@ -542,6 +542,14 @@ function splitMulti(value?: string) {
 
 function clean(value?: string | null) {
   return (value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function normalizeLocationLabel(value?: string) {
+  const cleaned = clean(value);
+  if (/^st\.?\s*george$/i.test(cleaned) || /^saint george$/i.test(cleaned)) {
+    return "St. George";
+  }
+  return cleaned;
 }
 
 export function slugify(value: string) {

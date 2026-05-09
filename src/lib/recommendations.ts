@@ -293,6 +293,7 @@ function scoreResource(profile: FounderProfile, resource: Resource) {
       score += community === profile.community ? 6 : 16;
     }
   }
+  score += founderCommunitySpecificityScore(profile, resource);
   if (profile.goal && text.includes(profile.goal.toLowerCase())) score += 12;
 
   const goalTokens = profile.goal
@@ -310,6 +311,8 @@ function scoreResource(profile: FounderProfile, resource: Resource) {
   const internationalIntent = hasInternationalExpansionIntent(profile.goal);
   const commercializationIntent = hasTechnologyCommercializationIntent(profile.goal);
   const angelIntent = hasAngelGroupIntent(profile.goal);
+  const governmentContractIntent = hasGovernmentContractingIntent(profile.goal);
+  const workforceTrainingIntent = hasWorkforceTrainingIntent(profile.goal);
   if (fundingIntent && resource.stages.includes("fund")) score += 24;
   if (ventureIntent && isVentureCapitalResource(resource)) score += 38;
   if (angelIntent && isAngelResource(resource)) score += 90;
@@ -321,8 +324,13 @@ function scoreResource(profile: FounderProfile, resource: Resource) {
     score -= 92;
   }
   if (internationalIntent && isInternationalTradeResource(resource)) score += 90;
-  if (internationalIntent && isLifeScienceResource(resource)) score += 32;
+  if (internationalIntent && isLifeScienceResource(resource)) score += 50;
+  if (internationalIntent && isFundingOnlyResource(resource)) score -= 24;
   if (commercializationIntent && isUniversityCommercializationResource(resource)) score += 105;
+  if (commercializationIntent && hasUniversityOfUtahIntent(profile.goal)) {
+    if (isUniversityOfUtahResource(resource)) score += 90;
+    if (isOtherCampusCommercializationResource(resource)) score -= 64;
+  }
   if (commercializationIntent && isLifeScienceResource(resource)) score += 24;
   if (commercializationIntent && isVentureCapitalResource(resource)) score -= 26;
   if (hasRuralAgricultureGrowthIntent(profile) && isAgricultureResource(resource)) score += 70;
@@ -332,11 +340,25 @@ function scoreResource(profile: FounderProfile, resource: Resource) {
   if (hasVeteranManufacturingIntent(profile) && isWeberOgdenResource(resource)) score += 34;
   if (hasVeteranManufacturingIntent(profile) && isManufacturingWorkforceResource(resource)) score += 28;
   if (hasVeteranManufacturingIntent(profile) && isFocusedElsewhere(profile, resource)) score -= 999;
+  if (governmentContractIntent && isGovernmentContractingResource(resource)) score += 96;
+  if (workforceTrainingIntent && isManufacturingWorkforceResource(resource)) score += 220;
+  if (
+    workforceTrainingIntent &&
+    !isManufacturingWorkforceResource(resource) &&
+    !isGovernmentContractingResource(resource)
+  ) {
+    score -= 16;
+  }
+  if ((governmentContractIntent || workforceTrainingIntent) && isMentorFirstResource(resource)) score -= 28;
+  if ((governmentContractIntent || workforceTrainingIntent) && isStartupBasicsResource(resource)) score -= 22;
+  if (profile.stage === "exit" && isExitResource(resource)) score += 60;
+  if (profile.stage === "exit" && isVentureCapitalResource(resource)) score -= 40;
   if (profile.stage === "fund" && operatingCompanyIntent && isFormationResource(resource)) score -= 72;
   if (profile.stage === "fund" && isFormationResource(resource)) score -= 28;
   if (profile.stage === "fund" && isStartupBasicsResource(resource)) score -= 20;
   if (commercializationIntent && isStartupBasicsResource(resource)) score -= 34;
   if (isFormationIntent(profile) && isFormationResource(resource)) score += 22;
+  if (isFormationIntent(profile) && isFounderCommunityResource(profile, resource)) score += 34;
   if (mentionsBusinessBanking(profile.goal) && /bank account|business bank/.test(text)) score += 18;
   score += directLinkScore(resource.link);
 
@@ -445,11 +467,43 @@ function isLifeScienceResource(resource: Resource) {
   return /life sciences?|healthcare|medical|device|biohive|bio utah|biotech|altitude lab/.test(text);
 }
 
+function isFundingOnlyResource(resource: Resource) {
+  const text = [resource.title, resource.description, resource.link, ...resource.topics]
+    .join(" ")
+    .toLowerCase();
+  return (
+    resource.topics.some((topic) => same(topic, "Funding")) &&
+    !/international|export|commercial service|world trade|trade\.gov|foreign markets?|global|life sciences?|healthcare|medical|device|biohive|bio utah|biotech|altitude lab/.test(
+      text
+    )
+  );
+}
+
 function isUniversityCommercializationResource(resource: Resource) {
   const text = [resource.title, resource.description, resource.link, ...resource.topics]
     .join(" ")
     .toLowerCase();
   return /university of utah|lassonde|commerciali[sz]|technology transfer|innovation fund|altitude lab|student innovation|entrepreneurship institute/.test(
+    text
+  );
+}
+
+function hasUniversityOfUtahIntent(goal: string) {
+  return /\b(university of utah|u of u|uofu|uofu|utah phd|utah doctoral|lassonde)\b/i.test(goal);
+}
+
+function isUniversityOfUtahResource(resource: Resource) {
+  const text = [resource.title, resource.description, resource.link]
+    .join(" ")
+    .toLowerCase();
+  return /university of utah|lassonde|altitude lab|utah innovation center|utah innovation fund/.test(text);
+}
+
+function isOtherCampusCommercializationResource(resource: Resource) {
+  const text = [resource.title, resource.description, resource.link]
+    .join(" ")
+    .toLowerCase();
+  return /\b(byu|brigham young|utah valley university|uvu|southern utah university|suu|snow college|utah state university|usu|weber state|davis tech|utah tech university)\b/.test(
     text
   );
 }
@@ -474,7 +528,7 @@ function isSouthernUtahResource(resource: Resource) {
 }
 
 function isWomenResource(resource: Resource) {
-  const text = [resource.title, resource.description, ...resource.communities]
+  const text = [resource.title, resource.description]
     .join(" ")
     .toLowerCase();
   return /women|woman|female|maven|women tech|bolder way|lialaunch/.test(text);
@@ -499,6 +553,36 @@ function isManufacturingWorkforceResource(resource: Resource) {
     .join(" ")
     .toLowerCase();
   return /manufactur|fabrication|custom fit|apex|workforce|talent|apprenticeship|supplier|contract/.test(
+    text
+  );
+}
+
+function hasGovernmentContractingIntent(goal: string) {
+  return /\b(government contracts?|government contracting|federal contracts?|public sector contracts?|procurement|defense contracts?|supplier)\b/i.test(
+    goal
+  );
+}
+
+function hasWorkforceTrainingIntent(goal: string) {
+  return /\b(workforce|train(?:ing)? workers?|worker training|talent pipeline|apprenticeship|custom fit|upskill|hiring plan)\b/i.test(
+    goal
+  );
+}
+
+function isGovernmentContractingResource(resource: Resource) {
+  const text = [resource.title, resource.description, resource.link, ...resource.topics]
+    .join(" ")
+    .toLowerCase();
+  return /apex|government contract|government contracting|procurement|supplier|defense|public sector/.test(
+    text
+  );
+}
+
+function isExitResource(resource: Resource) {
+  const text = [resource.title, resource.description, ...resource.topics]
+    .join(" ")
+    .toLowerCase();
+  return /close or exit|exit a business|succession|transition|tax|licens|sbdc|score|advisor|consultation/.test(
     text
   );
 }
@@ -559,9 +643,64 @@ function specialtyFormationPriority(profile: FounderProfile, resource: Resource)
   if (resource.id === "basecamp-startup-state-registration") return 1;
   if (hasVeteranManufacturingIntent(profile) && isVeteranResource(resource)) return 2;
   if (hasVeteranManufacturingIntent(profile) && isWeberOgdenResource(resource)) return 3;
+  if (isFounderCommunityResource(profile, resource)) return 4;
   const baseFormationPriority = formationResourcePriority(resource);
   if (baseFormationPriority < 99) return 10 + baseFormationPriority;
   return 50;
+}
+
+function isFounderCommunityResource(profile: FounderProfile, resource: Resource) {
+  const communities = new Set([
+    profile.community,
+    ...detectedFounderCommunities(profile.goal)
+  ].filter((community) => community && community !== "Any"));
+  if (communities.size === 0) return false;
+  const text = [resource.title, resource.description]
+    .join(" ")
+    .toLowerCase();
+  const isBroadAllCommunityResource =
+    resource.communities.length > 4 &&
+    !/women|woman|female|new american|immigrant|refugee|multicultural|minority|latino|hispanic|asian|black|native|pacific islander|lgbtq/.test(
+      text
+    );
+  if (isBroadAllCommunityResource) return false;
+  return resource.communities.some((community) => {
+    if (same(community, "Any")) return false;
+    if (communities.has(community)) return true;
+    return communities.has("New American") && same(community, "Multicultural");
+  });
+}
+
+function founderCommunitySpecificityScore(profile: FounderProfile, resource: Resource) {
+  const communities = new Set([
+    profile.community,
+    ...detectedFounderCommunities(profile.goal)
+  ].filter((community) => community && community !== "Any"));
+  if (communities.size === 0) return 0;
+
+  const goal = profile.goal.toLowerCase();
+  const text = [resource.title, resource.description, resource.link]
+    .join(" ")
+    .toLowerCase();
+  let score = 0;
+
+  if (communities.has("Women") && resource.communities.some((community) => same(community, "Women"))) {
+    score += 42;
+  }
+
+  if (communities.has("New American") && resource.communities.some((community) => same(community, "Multicultural"))) {
+    if (/suazo|hispanic|latino|underserved|minority|multicultural|immigrant|refugee|new american/.test(text)) {
+      score += 30;
+    }
+    if (
+      !/asian|black|native|pacific island|lgbtq|muslim|korean|chinese/.test(goal) &&
+      /pacific island|asian|black|native american|lgbtq|muslim|korean|chinese/.test(text)
+    ) {
+      score -= 24;
+    }
+  }
+
+  return score;
 }
 
 function formationResourcePriority(resource: Resource) {
