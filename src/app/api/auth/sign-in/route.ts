@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { googleOAuthConfigStatus } from "@/lib/googleAuth";
 import type { AuthProviderId } from "@/lib/types";
 import {
   BASECAMP_AUTH_COOKIE,
@@ -32,6 +33,13 @@ export async function POST(request: Request) {
   }
 
   const provider = parsed.data.provider;
+  if (provider === "google" && googleOAuthConfigStatus().configured) {
+    return NextResponse.json(
+      { error: "Google sign-in now uses the OAuth redirect flow. Refresh the page and try Google again." },
+      { status: 409 }
+    );
+  }
+
   const profile = provider === "site" ? parsed.data : fallbackProviderProfile(provider, parsed.data);
   if (!profile.name?.trim() || !profile.email?.trim()) {
     return NextResponse.json({ error: "Name and a valid email are required." }, { status: 400 });
