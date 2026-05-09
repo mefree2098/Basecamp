@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCachedCompanyIcons } from "@/lib/companyIcons";
 import { getFacets, loadCompanies, loadResources } from "@/lib/data";
+import { readClientIntegrationSettings } from "@/lib/integrationSettings";
 import { ensureServerGeocodes } from "@/lib/serverGeocoding";
 import type { MapBootstrapResponse } from "@/lib/types";
 
@@ -13,7 +14,8 @@ export async function GET() {
     companies,
     facets: getFacets(resources, companies),
     geocodedLocations: await ensureServerGeocodes(companies),
-    companyIcons: getCachedCompanyIcons(companies)
+    companyIcons: getCachedCompanyIcons(companies),
+    integrations: readClientIntegrationSettings()
   };
   return NextResponse.json(response);
 }

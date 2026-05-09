@@ -209,11 +209,13 @@ function runCommand(command: string, args: string[], cwd: string, timeoutMs = 50
 }
 
 function deployCwd() {
-  return path.resolve(process.env.BASECAMP_DEPLOY_CWD || process.cwd());
+  const explicitCwd = process.env.BASECAMP_DEPLOY_CWD?.trim();
+  if (explicitCwd) return path.resolve(explicitCwd);
+  return findRepoRoot(process.cwd()) ?? path.resolve(process.cwd());
 }
 
 function storageDir() {
-  return path.resolve(process.cwd(), process.env.BASECAMP_STORAGE_DIR ?? ".basecamp-data");
+  return path.resolve(process.env.BASECAMP_STORAGE_DIR || path.join(deployCwd(), ".basecamp-data"));
 }
 
 function liveControlDir() {
@@ -234,6 +236,18 @@ function serviceName() {
 
 function liveToken() {
   return process.env.BASECAMP_CODEX_TOKEN?.trim() || process.env.BASECAMP_LIVE_TOKEN?.trim() || "";
+}
+
+function findRepoRoot(startDir: string) {
+  let current = path.resolve(startDir);
+  while (true) {
+    if (fs.existsSync(path.join(current, ".git")) && fs.existsSync(path.join(current, "package.json"))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
 }
 
 function tokenFromRequest(request: Request) {

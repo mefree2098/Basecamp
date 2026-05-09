@@ -27,7 +27,7 @@ import {
   X
 } from "lucide-react";
 import { projectUtahPoint } from "@/lib/geo";
-import type { Company } from "@/lib/types";
+import type { ClientIntegrationSettings, Company } from "@/lib/types";
 
 type Facet = { label: string; count: number };
 type AppTheme = "classic" | "tech";
@@ -157,8 +157,8 @@ type GoogleMapStyle = {
 };
 
 const bakedGoogleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
-const googleMapsMapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID?.trim() ?? "";
-const googleMapsTechMapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_TECH_MAP_ID?.trim() ?? "";
+const bakedGoogleMapsMapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID?.trim() ?? "";
+const bakedGoogleMapsTechMapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_TECH_MAP_ID?.trim() ?? "";
 const GEOCODE_CACHE_KEY = "basecamp.googleGeocodes.v1";
 const GOOGLE_MAPS_CALLBACK = "__basecampGoogleMapsReady";
 const UTAH_CENTER = { lat: 40.35, lng: -111.84 };
@@ -203,6 +203,7 @@ export function StartupMap({
   facets,
   initialGeocodedLocations = {},
   initialCompanyIcons = {},
+  integrations,
   compact = false
 }: {
   companies: Company[];
@@ -214,6 +215,7 @@ export function StartupMap({
   };
   initialGeocodedLocations?: Record<string, CompanyMapLocation>;
   initialCompanyIcons?: Record<string, CompanyIconView>;
+  integrations?: ClientIntegrationSettings;
   compact?: boolean;
 }) {
   const initialFilters = readInitialMapFilters();
@@ -224,11 +226,17 @@ export function StartupMap({
   const [location, setLocation] = useState(initialFilters.location);
   const [hiring, setHiring] = useState(initialFilters.hiring);
   const [selectedSlug, setSelectedSlug] = useState("");
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState(bakedGoogleMapsApiKey);
+  const configuredGoogleMapsApiKey = integrations?.googleMaps.browserApiKey?.trim() ?? "";
+  const configuredGoogleMapsMapId = integrations?.googleMaps.mapId?.trim() || bakedGoogleMapsMapId;
+  const configuredGoogleMapsTechMapId =
+    integrations?.googleMaps.techMapId?.trim() || bakedGoogleMapsTechMapId;
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState(
+    configuredGoogleMapsApiKey || bakedGoogleMapsApiKey
+  );
   const [mapStatus, setMapStatus] = useState(
-    bakedGoogleMapsApiKey
+    configuredGoogleMapsApiKey || bakedGoogleMapsApiKey
       ? "Loading Google Maps and resolving startup addresses..."
-      : "Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to enable Google Maps, geocoding, and Street View."
+      : "Add a Google Maps API key in Admin to enable Google Maps, geocoding, and Street View."
   );
   const [streetViewStatus, setStreetViewStatus] = useState("");
   const [mapReady, setMapReady] = useState(false);
@@ -407,7 +415,7 @@ export function StartupMap({
   useEffect(() => {
     const readMapsKey = () => {
       const override = window.localStorage.getItem("basecamp.googleMapsApiKey")?.trim();
-      setGoogleMapsApiKey(override || bakedGoogleMapsApiKey);
+      setGoogleMapsApiKey(override || configuredGoogleMapsApiKey || bakedGoogleMapsApiKey);
     };
     readMapsKey();
     window.addEventListener("storage", readMapsKey);
@@ -416,7 +424,7 @@ export function StartupMap({
       window.removeEventListener("storage", readMapsKey);
       window.removeEventListener("basecamp-google-maps-settings", readMapsKey);
     };
-  }, []);
+  }, [configuredGoogleMapsApiKey]);
 
   useEffect(() => {
     const syncTheme = () => setTheme(readStoredTheme());
@@ -507,7 +515,11 @@ export function StartupMap({
         geocoderRef.current = new geocodingLibrary.Geocoder();
         streetViewServiceRef.current = new streetViewLibrary.StreetViewService();
 
-        const activeMapId = mapIdForTheme(theme);
+        const activeMapId = mapIdForTheme(
+          theme,
+          configuredGoogleMapsMapId,
+          configuredGoogleMapsTechMapId
+        );
         mapRef.current = new mapsLibrary.Map(mapElementRef.current, {
           backgroundColor: theme === "tech" ? "#020814" : "#e6edf4",
           center: UTAH_CENTER,
@@ -541,7 +553,7 @@ export function StartupMap({
     return () => {
       cancelled = true;
     };
-  }, [compact, googleMapsApiKey, theme]);
+  }, [compact, configuredGoogleMapsMapId, configuredGoogleMapsTechMapId, googleMapsApiKey, theme]);
 
   useEffect(() => {
     const overlays = overlaysRef.current;
@@ -588,13 +600,17 @@ export function StartupMap({
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
-    const activeMapId = mapIdForTheme(theme);
+    const activeMapId = mapIdForTheme(
+      theme,
+      configuredGoogleMapsMapId,
+      configuredGoogleMapsTechMapId
+    );
     mapRef.current.setOptions({
       backgroundColor: theme === "tech" ? "#020814" : "#e6edf4",
       mapId: activeMapId || undefined,
       styles: embeddedStylesForTheme(theme, activeMapId)
     });
-  }, [mapReady, theme]);
+  }, [configuredGoogleMapsMapId, configuredGoogleMapsTechMapId, mapReady, theme]);
 
   useEffect(() => {
     const Bounds = boundsRef.current;
@@ -1499,8 +1515,8 @@ function formatLinkedInPath(value: string) {
   }
 }
 
-function mapIdForTheme(theme: AppTheme) {
-  return theme === "tech" ? googleMapsTechMapId : googleMapsMapId;
+function mapIdForTheme(theme: AppTheme, mapId: string, techMapId: string) {
+  return theme === "tech" ? techMapId : mapId;
 }
 
 function embeddedStylesForTheme(theme: AppTheme, mapId: string) {

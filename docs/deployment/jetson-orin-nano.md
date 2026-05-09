@@ -27,7 +27,7 @@ npm run build
 mkdir -p .basecamp-data
 ```
 
-Edit `.env.production` and add any Google Maps, SMTP, hosted AI, or Codex settings you want enabled. The defaults keep cache workers conservative for a Jetson that is already running HomeBrain and Axiom.
+Edit `.env.production` and add SMTP, hosted AI, or Codex settings you want enabled. Google Maps can also be set there, but production map keys can now be saved from `https://basecamp.ntechr.com/admin/ai` without rebuilding. The defaults keep cache workers conservative for a Jetson that is already running HomeBrain and Axiom.
 
 Set `BASECAMP_CODEX_TOKEN` before enabling live control:
 
@@ -88,6 +88,16 @@ Smoke test from your workstation:
 node ~/.codex/skills/basecamp-live/scripts/basecamp-live.js overview
 node ~/.codex/skills/basecamp-live/scripts/basecamp-live.js logs --lines 120
 ```
+
+## Runtime Google Maps Settings
+
+Open `/admin/ai` and use the Google Maps panel to save:
+
+- Browser Maps API key
+- Optional default Google map ID
+- Optional tech-theme Google map ID
+
+The saved values are written to `BASECAMP_STORAGE_DIR/integration-settings.json`, so they survive service restarts and do not require `npm run build`. The browser key is sent to the map through `/api/map/bootstrap`; keep the key restricted to trusted HTTP referrers in Google Cloud.
 
 Deploys are intentionally confirmation-gated:
 

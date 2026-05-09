@@ -2,6 +2,7 @@ import "server-only";
 
 import fs from "node:fs";
 import path from "node:path";
+import { googleMapsGeocodingKey } from "./integrationSettings";
 import type { Company } from "./types";
 
 type CachedGeocode =
@@ -149,6 +150,7 @@ function saveCache(cache: Record<string, CachedGeocode>) {
 
 function googleGeocodingKey() {
   return (
+    googleMapsGeocodingKey() ||
     process.env.GOOGLE_MAPS_GEOCODING_API_KEY?.trim() ||
     process.env.GOOGLE_MAPS_API_KEY?.trim() ||
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||

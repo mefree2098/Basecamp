@@ -41,6 +41,7 @@ export function StartupMapPage() {
       facets={bootstrap.facets}
       initialGeocodedLocations={bootstrap.geocodedLocations}
       initialCompanyIcons={bootstrap.companyIcons}
+      integrations={bootstrap.integrations}
     />
   );
 }

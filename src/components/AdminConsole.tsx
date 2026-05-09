@@ -148,7 +148,7 @@ export function AdminConsole() {
         <Link className="stat-card stat-card--link" href="/admin/ai">
           <Bot size={20} aria-hidden="true" />
           <strong>AI</strong>
-          <span>Providers, Codex auth, and maps key</span>
+          <span>Providers, Codex auth, and integration keys</span>
         </Link>
       </div>
 
@@ -300,7 +300,7 @@ export function AdminConsole() {
             <MapPinned size={17} aria-hidden="true" />
             <div>
               <strong>Maps readiness</strong>
-              <span>Google Maps key checks live beside AI settings under Admin.</span>
+              <span>Google Maps and integration keys live beside AI settings under Admin.</span>
             </div>
           </div>
         </div>

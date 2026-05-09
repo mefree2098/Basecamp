@@ -143,6 +143,29 @@ export type MapBootstrapResponse = {
   facets: PlatformFacets;
   geocodedLocations: Record<string, CompanyMapLocation>;
   companyIcons: Record<string, CompanyIconView>;
+  integrations: ClientIntegrationSettings;
+};
+
+export type ClientIntegrationSettings = {
+  googleMaps: {
+    browserApiKey: string;
+    mapId: string;
+    techMapId: string;
+    hasServerGeocodingKey: boolean;
+  };
+};
+
+export type AdminIntegrationSettings = {
+  updatedAt?: string;
+  googleMaps: {
+    browserApiKey: string;
+    browserApiKeyPreview: string;
+    hasBrowserApiKey: boolean;
+    mapId: string;
+    techMapId: string;
+    serverGeocodingKeyPreview: string;
+    hasServerGeocodingKey: boolean;
+  };
 };
 
 export type CompanyProfileResponse = {

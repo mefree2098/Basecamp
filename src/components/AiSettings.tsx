@@ -1,8 +1,14 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Bot, CheckCircle2, KeyRound, MapPinned, RefreshCw, Shield, Zap } from "lucide-react";
-import type { AiProvider, AiSettings as AiSettingsType, ModelOption, ThinkingLevel } from "@/lib/types";
+import type {
+  AdminIntegrationSettings,
+  AiProvider,
+  AiSettings as AiSettingsType,
+  ModelOption,
+  ThinkingLevel
+} from "@/lib/types";
 import { modelFallbacks } from "@/lib/site-context";
 
 const providers: Array<{ value: AiProvider; label: string; hint: string }> = [
@@ -82,18 +88,22 @@ export function AiSettings() {
   const [pendingLoginId, setPendingLoginId] = useState("");
   const [loginUrl, setLoginUrl] = useState("");
   const [isLoginPending, setIsLoginPending] = useState(false);
+  const [integrationSettings, setIntegrationSettings] = useState<AdminIntegrationSettings | null>(null);
   const [mapsKey, setMapsKey] = useState("");
-  const [mapsStatus, setMapsStatus] = useState(
-    bakedGoogleMapsApiKey
-      ? "Google Maps key is baked in for this build. You can override it for this browser."
-      : "No baked Google Maps key found. Add one here or set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY."
-  );
+  const [mapsMapId, setMapsMapId] = useState("");
+  const [mapsTechMapId, setMapsTechMapId] = useState("");
+  const [mapsStatus, setMapsStatus] = useState("Loading saved Google Maps settings...");
 
   const providerModels = useMemo(
     () => models.filter((model) => model.provider === settings.provider || model.provider === "mock"),
     [models, settings.provider]
   );
-  const effectiveMapsKey = mapsKey.trim() || bakedGoogleMapsApiKey;
+  const savedMapsKey = integrationSettings?.googleMaps.browserApiKey ?? "";
+  const effectiveMapsKey = mapsKey.trim() || savedMapsKey || bakedGoogleMapsApiKey;
+
+  useEffect(() => {
+    void loadIntegrationSettings();
+  }, []);
 
   function update(patch: Partial<AiSettingsType>) {
     const next = { ...settings, ...patch };
@@ -109,28 +119,70 @@ export function AiSettings() {
     window.dispatchEvent(new Event(STORED_SETTINGS_EVENT));
   }
 
-  function loadMapsKeyFromStorage() {
-    return window.localStorage.getItem("basecamp.googleMapsApiKey") ?? "";
+  async function loadIntegrationSettings() {
+    try {
+      const response = await fetch("/api/admin/integrations", { cache: "no-store" });
+      const result = (await response.json()) as AdminIntegrationSettings;
+      setIntegrationSettings(result);
+      setMapsMapId(result.googleMaps.mapId);
+      setMapsTechMapId(result.googleMaps.techMapId);
+      setMapsStatus(
+        result.googleMaps.hasBrowserApiKey
+          ? `Server Google Maps key is saved (${result.googleMaps.browserApiKeyPreview}).`
+          : bakedGoogleMapsApiKey
+            ? "Using the build-time Google Maps key until a server key is saved."
+            : "No Google Maps key is saved yet."
+      );
+    } catch {
+      setMapsStatus("Could not load saved Google Maps settings.");
+    }
   }
 
-  function saveMapsKey(nextKey = mapsKey) {
-    const trimmed = nextKey.trim();
-    if (trimmed) {
-      window.localStorage.setItem("basecamp.googleMapsApiKey", trimmed);
-      setMapsStatus("Google Maps key override saved for this browser. Reload the map if it is already open.");
-    } else {
-      window.localStorage.removeItem("basecamp.googleMapsApiKey");
-      setMapsStatus(
-        bakedGoogleMapsApiKey
-          ? "Using the baked-in Google Maps key for this build."
-          : "Google Maps key cleared. The startup map will use the non-Google fallback."
-      );
+  async function saveMapsSettings(options: { clearBrowserApiKey?: boolean } = {}) {
+    setMapsStatus("Saving Google Maps settings...");
+    const googleMaps: {
+      browserApiKey?: string;
+      mapId: string;
+      techMapId: string;
+      clearBrowserApiKey?: boolean;
+    } = {
+      mapId: mapsMapId,
+      techMapId: mapsTechMapId
+    };
+    if (options.clearBrowserApiKey) {
+      googleMaps.clearBrowserApiKey = true;
+    } else if (mapsKey.trim()) {
+      googleMaps.browserApiKey = mapsKey.trim();
     }
-    window.dispatchEvent(new Event(GOOGLE_MAPS_SETTINGS_EVENT));
+
+    try {
+      const response = await fetch("/api/admin/integrations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ googleMaps })
+      });
+      const result = (await response.json()) as AdminIntegrationSettings & { error?: unknown };
+      if (!response.ok) {
+        throw new Error(typeof result.error === "string" ? result.error : "Unable to save integration settings.");
+      }
+      setIntegrationSettings(result);
+      setMapsKey("");
+      setMapsMapId(result.googleMaps.mapId);
+      setMapsTechMapId(result.googleMaps.techMapId);
+      window.localStorage.removeItem("basecamp.googleMapsApiKey");
+      window.dispatchEvent(new Event(GOOGLE_MAPS_SETTINGS_EVENT));
+      setMapsStatus(
+        result.googleMaps.hasBrowserApiKey
+          ? `Server Google Maps settings saved (${result.googleMaps.browserApiKeyPreview}). Reload the map if it is already open.`
+          : "Server Google Maps key cleared. The startup map will use the build-time key or fallback view."
+      );
+    } catch (error) {
+      setMapsStatus(error instanceof Error ? error.message : "Unable to save Google Maps settings.");
+    }
   }
 
   async function checkMapsKey() {
-    const key = (mapsKey.trim() || bakedGoogleMapsApiKey).trim();
+    const key = effectiveMapsKey.trim();
     if (!key) {
       setMapsStatus("Add a Google Maps API key before checking permissions.");
       return;
@@ -511,8 +563,8 @@ export function AiSettings() {
         <div className="admin-panel">
           <h2>Google Maps</h2>
           <p className="muted">
-            The Startup Map uses Maps JavaScript, browser geocoding, and Street View. Restrict the
-            key to trusted HTTP referrers in Google Cloud.
+            The Startup Map uses Maps JavaScript, browser geocoding, and Street View. Saved settings
+            are stored on the server so production can update without a rebuild.
           </p>
           <p className="result-meta">
             Active key: <strong>{maskMapsKey(effectiveMapsKey)}</strong>
@@ -526,18 +578,33 @@ export function AiSettings() {
               type="password"
               value={mapsKey}
               onChange={(event) => setMapsKey(event.target.value)}
-              onFocus={() => {
-                if (!mapsKey) setMapsKey(loadMapsKeyFromStorage());
-              }}
               placeholder={
-                bakedGoogleMapsApiKey ? "Using baked-in key unless overridden" : "Paste Maps key"
+                integrationSettings?.googleMaps.hasBrowserApiKey
+                  ? `${integrationSettings.googleMaps.browserApiKeyPreview} saved on server`
+                  : "Paste Maps browser key"
               }
             />
           </label>
+          <label className="input-field">
+            <span>Default map ID</span>
+            <input
+              value={mapsMapId}
+              onChange={(event) => setMapsMapId(event.target.value)}
+              placeholder="Optional Google Cloud map ID"
+            />
+          </label>
+          <label className="input-field">
+            <span>Tech theme map ID</span>
+            <input
+              value={mapsTechMapId}
+              onChange={(event) => setMapsTechMapId(event.target.value)}
+              placeholder="Optional Google Cloud map ID"
+            />
+          </label>
           <div className="button-row">
-            <button className="primary-button" type="button" onClick={() => saveMapsKey()}>
+            <button className="primary-button" type="button" onClick={() => void saveMapsSettings()}>
               <CheckCircle2 size={16} aria-hidden="true" />
-              Save maps key
+              Save maps settings
             </button>
             <button className="ghost-button" type="button" onClick={checkMapsKey}>
               <Shield size={16} aria-hidden="true" />
@@ -548,12 +615,17 @@ export function AiSettings() {
               type="button"
               onClick={() => {
                 setMapsKey("");
-                saveMapsKey("");
+                void saveMapsSettings({ clearBrowserApiKey: true });
               }}
             >
-              Use baked-in key
+              Clear saved key
             </button>
           </div>
+          <p className="muted">
+            Restrict this browser key to trusted HTTP referrers in Google Cloud. Server-side
+            geocoding uses the same saved key unless a dedicated geocoding key is configured in the
+            environment.
+          </p>
           <p className="status-line">{mapsStatus}</p>
         </div>
       </div>
