@@ -25,7 +25,7 @@ main().catch((error) => {
 
 async function main() {
   const projectDir = process.cwd();
-  const buildModule = require("next/dist/build");
+  const buildModule = loadNextBuildModule();
   const { Bundler } = require("next/dist/lib/bundler");
   const build = buildModule.default || buildModule;
 
@@ -43,6 +43,30 @@ async function main() {
     undefined,
     {}
   );
+}
+
+function loadNextBuildModule() {
+  const configPath = require.resolve("next/dist/server/config", { paths: [process.cwd()] });
+  const configModule = require(configPath);
+  const loadConfig = configModule.default || configModule;
+
+  require.cache[configPath].exports = {
+    ...configModule,
+    __esModule: true,
+    default: async (...args) => {
+      const config = await loadConfig(...args);
+      if (config.deploymentId || typeof config.generateBuildId === "function") {
+        return config;
+      }
+
+      return {
+        ...config,
+        generateBuildId: () => null
+      };
+    }
+  };
+
+  return require("next/dist/build");
 }
 
 function formatError(error) {
