@@ -2051,6 +2051,24 @@ button {
   background: #0b5fc1;
 }
 
+.map-source-toggle-row {
+  display: grid;
+  gap: 6px;
+}
+
+.map-source-toggle-row small {
+  color: #66758a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.map-source-toggle {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 42px;
+  box-shadow: none;
+}
+
 .map-filter-stack .select-field {
   gap: 9px;
 }
@@ -2498,6 +2516,14 @@ button {
 
 .map-toggle-control.active > span::after {
   transform: translateX(14px);
+}
+
+.map-source-toggle.active {
+  color: #0b6f6d;
+}
+
+.map-source-toggle.active > span {
+  background: #0d8f8c;
 }
 
 .map-investor-pill {
@@ -4355,6 +4381,19 @@ button {
 [data-theme="tech"] .map-toggle-control.active > span {
   background: #ff8d2d;
   box-shadow: 0 0 12px rgba(255, 141, 45, 0.58);
+}
+
+[data-theme="tech"] .map-source-toggle-row small {
+  color: #92a7c5;
+}
+
+[data-theme="tech"] .map-source-toggle.active {
+  color: #64f1e6;
+}
+
+[data-theme="tech"] .map-source-toggle.active > span {
+  background: #22c9c3;
+  box-shadow: 0 0 12px rgba(34, 201, 195, 0.52);
 }
 
 [data-theme="tech"] .google-startup-marker {

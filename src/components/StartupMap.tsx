@@ -231,7 +231,6 @@ let googleMapsScriptPromise: Promise<void> | null = null;
 
 export function StartupMap({
   companies,
-  facets,
   initialGeocodedLocations = {},
   initialCompanyIcons = {},
   integrations,
@@ -276,6 +275,9 @@ export function StartupMap({
   const [focusMode, setFocusMode] = useState(false);
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
   const [activeClusterId, setActiveClusterId] = useState("");
+  const [showExtraContent, setShowExtraContent] = useState(() =>
+    readStoredBoolean("basecamp.map.showExtraContent", true)
+  );
   const [theme, setTheme] = useState<AppTheme>(() => readStoredTheme());
   const [savedSlugs, setSavedSlugs] = useState<string[]>(() =>
     readStoredStringArray("basecamp.savedCompanies")
@@ -307,9 +309,26 @@ export function StartupMap({
   const mapItemsRef = useRef<MapOverlayItem[]>([]);
   const selectMapItemRef = useRef<(item: MapOverlayItem) => void>(() => undefined);
 
+  const visibleCompanies = useMemo(
+    () => (showExtraContent ? companies : companies.filter((company) => !isExtraMapCompany(company))),
+    [companies, showExtraContent]
+  );
+  const visibleFacets = useMemo(
+    () => ({
+      sectors: companyFacet(visibleCompanies, (company) => company.sector ?? "Uncategorized"),
+      companyStages: companyFacet(visibleCompanies, (company) => company.stage ?? "Unknown"),
+      employeeBands: companyFacet(visibleCompanies, (company) => company.employees ?? "Unknown"),
+      companyLocations: companyFacet(visibleCompanies, (company) => company.location || "Utah", "alpha")
+    }),
+    [visibleCompanies]
+  );
+  const extraCompanyCount = useMemo(
+    () => companies.filter((company) => isExtraMapCompany(company)).length,
+    [companies]
+  );
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return companies.filter((company) => {
+    return visibleCompanies.filter((company) => {
       const searchable = [
         company.name,
         company.description,
@@ -331,7 +350,7 @@ export function StartupMap({
         (!hiring || hiring === "any" || company.hiringStatus === hiring)
       );
     });
-  }, [companies, employees, hiring, location, q, sector, stage]);
+  }, [employees, hiring, location, q, sector, stage, visibleCompanies]);
 
   const selected = selectedSlug ? filtered.find((company) => company.slug === selectedSlug) ?? null : null;
   const selectedLocation = selected ? mapLocationForCompany(selected, geocodedLocations) : null;
@@ -359,19 +378,22 @@ export function StartupMap({
         .slice(0, compact ? 30 : 60),
     [compact, filtered, initialGeocodedLocations]
   );
-  const hiringNowCount = companies.filter((company) => company.hiringStatus === "hiring").length;
+  const hiringNowCount = visibleCompanies.filter((company) => company.hiringStatus === "hiring").length;
   const hiringOptions = [
     { label: "hiring", count: hiringNowCount },
     {
       label: "not_hiring",
-      count: companies.filter((company) => company.hiringStatus === "not_hiring").length
+      count: visibleCompanies.filter((company) => company.hiringStatus === "not_hiring").length
     },
     {
       label: "unknown",
-      count: companies.filter((company) => company.hiringStatus === "unknown").length
+      count: visibleCompanies.filter((company) => company.hiringStatus === "unknown").length
     }
   ];
   const activeFilters = [
+    showExtraContent
+      ? null
+      : { id: "extra-content", label: "Seed data only", clear: () => setShowExtraContent(true) },
     q.trim() ? { id: "q", label: q.trim(), clear: () => setQ("") } : null,
     sector ? { id: "sector", label: sector, clear: () => setSector("") } : null,
     stage ? { id: "stage", label: stage, clear: () => setStage("") } : null,
@@ -384,11 +406,11 @@ export function StartupMap({
   const selectedVerified = Boolean(
     selected && (selected.verificationStatus === "claimed" || selectedLocation?.confidence === "google")
   );
-  const topSectorChips = facets.sectors.slice(0, 5);
+  const topSectorChips = visibleFacets.sectors.slice(0, 5);
   const visibleHiringCount = filtered.filter((company) => company.hiringStatus === "hiring").length;
   const investorSummary = activeFilters.length
     ? `${activeFilters.length} filter${activeFilters.length === 1 ? "" : "s"} active`
-    : `${(sector ? 1 : facets.sectors.length).toLocaleString()} sectors to explore`;
+    : `${(sector ? 1 : visibleFacets.sectors.length).toLocaleString()} sectors to explore`;
 
   const selectCompany = useCallback((slug: string, options: { preserveCluster?: boolean } = {}) => {
     if (!options.preserveCluster) setActiveClusterId("");
@@ -418,6 +440,10 @@ export function StartupMap({
   useEffect(() => {
     selectMapItemRef.current = selectMapItem;
   }, [selectMapItem]);
+
+  useEffect(() => {
+    window.localStorage.setItem("basecamp.map.showExtraContent", showExtraContent ? "true" : "false");
+  }, [showExtraContent]);
 
   useEffect(() => {
     if (!mapReady) return;
@@ -501,6 +527,7 @@ export function StartupMap({
     setLocation("");
     setHiring("");
     setActiveClusterId("");
+    setShowExtraContent(true);
     setFallbackPan({ x: 0, y: 0 });
   }
 
@@ -940,6 +967,28 @@ export function StartupMap({
           />
         </label>
 
+        <div className="map-source-toggle-row">
+          <button
+            type="button"
+            className={
+              showExtraContent
+                ? "map-toggle-control map-source-toggle active"
+                : "map-toggle-control map-source-toggle"
+            }
+            onClick={() => setShowExtraContent((value) => !value)}
+            aria-pressed={showExtraContent}
+          >
+            <Layers size={17} aria-hidden="true" />
+            Extra data
+            <span aria-hidden="true" />
+          </button>
+          <small>
+            {showExtraContent
+              ? `${extraCompanyCount.toLocaleString()} public records on`
+              : "Initial seed document only"}
+          </small>
+        </div>
+
         <div className="sector-chip-row" aria-label="Quick sector filters">
           <button
             type="button"
@@ -966,18 +1015,18 @@ export function StartupMap({
             <ChevronRight size={14} aria-hidden="true" />
           </summary>
           <div className="map-filter-stack">
-            <MapSelect label="Sector" value={sector} onChange={setSector} options={facets.sectors} />
+            <MapSelect label="Sector" value={sector} onChange={setSector} options={visibleFacets.sectors} />
             <MapSelect
               label="Size"
               value={employees}
               onChange={setEmployees}
-              options={facets.employeeBands}
+              options={visibleFacets.employeeBands}
             />
             <MapSelect
               label="Stage"
               value={stage}
               onChange={setStage}
-              options={facets.companyStages}
+              options={visibleFacets.companyStages}
             />
             <MapSelect
               label="Hiring Status"
@@ -989,7 +1038,7 @@ export function StartupMap({
               label="Location"
               value={location}
               onChange={setLocation}
-              options={facets.companyLocations}
+              options={visibleFacets.companyLocations}
             />
           </div>
         </details>
@@ -1534,6 +1583,28 @@ function mapLocationForCompany(
   );
 }
 
+function isExtraMapCompany(company: Company) {
+  return company.displayType === "public-business" || Boolean(company.source?.id);
+}
+
+function companyFacet(
+  companies: Company[],
+  select: (company: Company) => string | undefined,
+  sort: "count" | "alpha" = "count"
+) {
+  const counts = new Map<string, number>();
+  for (const company of companies) {
+    const label = select(company)?.trim();
+    if (!label) continue;
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) =>
+      sort === "alpha" ? a.label.localeCompare(b.label) : b.count - a.count || a.label.localeCompare(b.label)
+    );
+}
+
 function buildMapOverlayItems(
   companies: Company[],
   geocodedLocations: Record<string, CompanyMapLocation>,
@@ -1690,6 +1761,14 @@ function readInitialMapFilters() {
     location: params.get("location") ?? "",
     hiring: params.get("hiring") ?? ""
   };
+}
+
+function readStoredBoolean(key: string, fallback: boolean) {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+  const value = window.localStorage.getItem(key);
+  return value === null ? fallback : value === "true";
 }
 
 function readStoredStringArray(key: string) {
