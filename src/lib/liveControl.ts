@@ -176,7 +176,7 @@ export function restartBasecampService(confirm?: string) {
     };
   }
 
-  const result = scheduleSystemdRestart();
+  const result = scheduleDetachedRestart();
   return {
     ok: result.ok,
     status: result.ok ? 202 : 500,
@@ -257,26 +257,48 @@ function readGitState() {
   };
 }
 
-function scheduleSystemdRestart() {
+function scheduleDetachedRestart() {
   const unitName = `${serviceName()}-manual-restart-${randomUUID().slice(0, 8)}`;
-  return runCommand(
-    "sudo",
-    [
-      "-n",
-      "systemd-run",
-      "--unit",
-      unitName,
-      "--description",
-      `Restart ${serviceName()} after Basecamp live-control request`,
-      "--on-active=2s",
-      "--collect",
-      "/usr/bin/systemctl",
-      "restart",
-      serviceName()
-    ],
-    deployCwd(),
-    15000
-  );
+  try {
+    const child = spawn(
+      process.execPath,
+      [
+        "-e",
+        [
+          "const { spawnSync } = require('node:child_process');",
+          "const [systemctlPath, serviceName] = process.argv.slice(1);",
+          "setTimeout(() => {",
+          "  spawnSync('sudo', ['-n', systemctlPath, 'restart', serviceName], { stdio: 'ignore' });",
+          "}, 2000);"
+        ].join("\n"),
+        "/usr/bin/systemctl",
+        serviceName()
+      ],
+      {
+        cwd: deployCwd(),
+        detached: true,
+        stdio: "ignore"
+      }
+    );
+    child.unref();
+  } catch (error) {
+    return {
+      ok: false,
+      command: `node -e <delayed sudo -n /usr/bin/systemctl restart ${serviceName()}>`,
+      stdout: "",
+      stderr: "",
+      status: null,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+
+  return {
+    ok: true,
+    command: `node -e <delayed sudo -n /usr/bin/systemctl restart ${serviceName()}>`,
+    stdout: unitName,
+    stderr: "",
+    status: 0
+  };
 }
 
 function runCommand(command: string, args: string[], cwd: string, timeoutMs = 5000): CommandResult {

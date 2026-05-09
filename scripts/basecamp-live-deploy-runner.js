@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { spawnSync } = require("node:child_process");
+const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -88,25 +88,44 @@ function scheduleServiceRestart() {
     }
   });
   log(`\n[${stepStartedAt}] ${label}`);
-  run("sudo", [
-    "-n",
-    "systemd-run",
-    "--unit",
-    unitName,
-    "--description",
-    `Restart ${serviceName} after Basecamp deploy ${jobId}`,
-    `--on-active=${restartDelay}`,
-    "--collect",
-    systemctlPath,
-    "restart",
-    serviceName
-  ]);
+  const delayMs = parseRestartDelayMs(restartDelay);
+  const child = spawn(
+    process.execPath,
+    [
+      "-e",
+      [
+        "const { spawnSync } = require('node:child_process');",
+        "const [delayMs, systemctlPath, serviceName] = process.argv.slice(1);",
+        "setTimeout(() => {",
+        "  spawnSync('sudo', ['-n', systemctlPath, 'restart', serviceName], { stdio: 'ignore' });",
+        "}, Number(delayMs));"
+      ].join("\n"),
+      String(delayMs),
+      systemctlPath,
+      serviceName
+    ],
+    {
+      cwd,
+      detached: true,
+      stdio: "ignore"
+    }
+  );
+  child.unref();
+  log(`$ node -e <delayed sudo -n ${systemctlPath} restart ${serviceName}>`);
   return unitName;
 }
 
 function restartUnitName() {
   const safeJobId = jobId.replace(/[^a-zA-Z0-9-]/g, "-").slice(0, 64);
   return `basecamp-restart-${safeJobId}`;
+}
+
+function parseRestartDelayMs(value) {
+  const trimmed = String(value || "").trim();
+  const seconds = trimmed.match(/^(\d+(?:\.\d+)?)s$/);
+  if (seconds) return Math.max(0, Math.round(Number(seconds[1]) * 1000));
+  const milliseconds = Number(trimmed);
+  return Number.isFinite(milliseconds) ? Math.max(0, Math.round(milliseconds)) : 2000;
 }
 
 function run(command, args) {
