@@ -222,12 +222,19 @@ struct MapCanvas: View {
     @Binding var selectedSlug: String
     @Binding var heatmap: Bool
     @Binding var mapStyleSatellite: Bool
+    @State private var lookAroundScene: MKLookAroundScene?
+    @State private var lookAroundPresented = false
+    @State private var streetViewStatus: String?
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 39.72, longitude: -111.55),
             span: MKCoordinateSpan(latitudeDelta: 5.4, longitudeDelta: 5.7)
         )
     )
+
+    private var selectedCompany: Company? {
+        companies.first { $0.slug == selectedSlug } ?? companies.first
+    }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -287,6 +294,15 @@ struct MapCanvas: View {
                     mapStyleSatellite.toggle()
                 }
                 Button {
+                    Task { await openStreetView() }
+                } label: {
+                    Label("Street View", systemImage: "binoculars.fill")
+                        .font(.system(size: 13, weight: .heavy))
+                        .frame(minHeight: 38)
+                }
+                .buttonStyle(NeonButtonStyle(tint: palette.blue))
+                .disabled(selectedCompany == nil)
+                Button {
                     heatmap.toggle()
                 } label: {
                     Label("Heatmap", systemImage: "flame")
@@ -307,6 +323,28 @@ struct MapCanvas: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .padding(24)
             }
+
+            if let streetViewStatus {
+                Text(streetViewStatus)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(palette.text)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(palette.panelStrong.opacity(0.92))
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(palette.line, lineWidth: 1))
+                    )
+                    .padding(.top, 174)
+                    .padding(.trailing, 14)
+                    .frame(maxWidth: 280, alignment: .trailing)
+            }
+        }
+        .sheet(isPresented: $lookAroundPresented) {
+            if let lookAroundScene {
+                LookAroundPreview(scene: lookAroundScene)
+                    .ignoresSafeArea()
+            }
         }
     }
 
@@ -315,6 +353,38 @@ struct MapCanvas: View {
             return geocoded.coordinate
         }
         return company.coordinate
+    }
+
+    @MainActor
+    private func openStreetView() async {
+        guard let selectedCompany else { return }
+        streetViewStatus = "Finding Street View near \(selectedCompany.name)..."
+        do {
+            let request = MKLookAroundSceneRequest(coordinate: coordinate(for: selectedCompany))
+            guard let scene = try await request.scene else {
+                streetViewStatus = "No Street View scene was found near \(selectedCompany.name)."
+                return
+            }
+            lookAroundScene = scene
+            lookAroundPresented = true
+            streetViewStatus = nil
+        } catch {
+            streetViewStatus = "Street View is not available for \(selectedCompany.name)."
+        }
+    }
+}
+
+struct LookAroundPreview: UIViewControllerRepresentable {
+    var scene: MKLookAroundScene
+
+    func makeUIViewController(context: Context) -> MKLookAroundViewController {
+        let controller = MKLookAroundViewController()
+        controller.scene = scene
+        return controller
+    }
+
+    func updateUIViewController(_ controller: MKLookAroundViewController, context: Context) {
+        controller.scene = scene
     }
 }
 

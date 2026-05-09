@@ -690,7 +690,7 @@ export function StartupMap({
             strictBounds: false
           },
           scaleControl: true,
-          streetViewControl: false,
+          streetViewControl: true,
           styles: embeddedStylesForTheme(theme, activeMapId),
           zoom: compact ? 6 : 7,
           zoomControl: false
@@ -898,17 +898,11 @@ export function StartupMap({
 
   async function openStreetView() {
     if (!selected || !selectedLocation || !streetViewServiceRef.current || !mapRef.current) return;
-    if (selectedLocation.confidence !== "google") {
-      setStreetViewStatus(
-        "Street View opens after this company has an exact Google-geocoded address. Enable Geocoding API for the key first."
-      );
-      return;
-    }
     setStreetViewStatus(`Finding Street View near ${selected.name}...`);
     try {
       const response = await streetViewServiceRef.current.getPanorama({
         location: selectedLocation,
-        radius: 250,
+        radius: selectedLocation.confidence === "google" ? 250 : 750,
         source: "outdoor"
       });
       const panorama = mapRef.current.getStreetView();
@@ -1196,7 +1190,7 @@ export function StartupMap({
                 type="button"
                 className="map-icon-control"
                 onClick={openStreetView}
-                disabled={!mapReady || !selected || selectedLocation?.confidence !== "google"}
+                disabled={!mapReady || !selected}
               >
                 <Camera size={17} aria-hidden="true" />
                 Street View
