@@ -278,7 +278,7 @@ export function writeImportedCsv(kind: "resources" | "companies", csv: string) {
           industries: splitMulti(row.Industries),
           locations: splitMulti(row.Locations),
           topics: splitMulti(row.Topics),
-          link: clean(row.link),
+          link: normalizeUrl(clean(row.link)) ?? clean(row.link),
           email: clean(row.email) || undefined
         }))
       : parseCsvText<CompanyCsvRow>(csv).map((row) => ({
@@ -337,7 +337,7 @@ function mergeResourceOverrides(resources: Resource[]) {
         locations: row.locations ?? [],
         topics,
         stages: row.stages ?? deriveStages(topics, row.description ?? ""),
-        link: row.link ?? "",
+        link: normalizeUrl(row.link) ?? row.link ?? "",
         email: row.email,
         freshness: {
           status: "reviewed",
@@ -503,7 +503,7 @@ function directSeedLink(row: ResourceCsvRow) {
   }
   if (title === "small business development center (sbdc)") return "https://utahsbdc.org/services/";
   if (title === "score") return "https://www.score.org/how-mentoring-works/";
-  return clean(row.link);
+  return normalizeUrl(clean(row.link)) ?? clean(row.link);
 }
 
 function uniqueCompanySlugs(companies: Company[]) {

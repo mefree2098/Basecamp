@@ -1094,6 +1094,7 @@ button {
   gap: 8px;
 }
 
+.chat-resource-strip a,
 .chat-resource-strip button,
 .starter-prompts button {
   display: inline-flex;
@@ -1107,8 +1108,10 @@ button {
   background: rgba(255, 255, 255, 0.82);
   font-size: 13px;
   font-weight: 800;
+  text-decoration: none;
 }
 
+.chat-resource-strip a.active,
 .chat-resource-strip button.active,
 .starter-prompts button:hover {
   color: var(--teal-dark);
@@ -1168,6 +1171,8 @@ button {
 }
 
 .side-browser__frame {
+  display: grid;
+  grid-template-rows: minmax(260px, 1fr) auto;
   min-height: 360px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -1178,9 +1183,43 @@ button {
 .side-browser__frame iframe {
   width: 100%;
   height: 100%;
-  min-height: 520px;
+  min-height: 420px;
   border: 0;
   background: #fff;
+}
+
+.side-browser__frame-fallback {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.side-browser__frame-fallback strong,
+.side-browser__frame-fallback span {
+  line-height: 1.35;
+}
+
+.side-browser__frame-fallback strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.side-browser__frame-fallback span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.side-browser__frame-fallback .primary-button {
+  grid-row: span 2;
+  min-height: 38px;
+  padding: 0 12px;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .side-browser__guide {
@@ -1235,7 +1274,6 @@ button {
 
 .recommendation-list--compact .recommendation-card {
   width: 100%;
-  cursor: pointer;
   text-align: left;
 }
 
@@ -1341,6 +1379,17 @@ button {
   box-shadow: none;
 }
 
+.recommendation-card__select {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
 .recommendation-card span,
 .resource-card__meta {
   color: var(--gold);
@@ -1369,7 +1418,7 @@ button {
   line-height: 1.5;
 }
 
-.recommendation-card a {
+.recommendation-card__open {
   display: grid;
   place-items: center;
   width: 42px;
@@ -1377,6 +1426,7 @@ button {
   color: #fff;
   border-radius: 8px;
   background: var(--teal);
+  text-decoration: none;
 }
 
 .plan-item,
@@ -3860,10 +3910,12 @@ button {
 [data-theme="tech"] .guided-card,
 [data-theme="tech"] .assistant-answer,
 [data-theme="tech"] .chat-message__body,
+[data-theme="tech"] .chat-resource-strip a,
 [data-theme="tech"] .chat-resource-strip button,
 [data-theme="tech"] .starter-prompts button,
 [data-theme="tech"] .side-browser__guide,
 [data-theme="tech"] .side-browser__empty,
+[data-theme="tech"] .side-browser__frame-fallback,
 [data-theme="tech"] .side-browser__url,
 [data-theme="tech"] .map-commandbar,
 [data-theme="tech"] .map-sidebar--rich,
@@ -3966,7 +4018,7 @@ button {
   color: #5de4ff;
 }
 
-[data-theme="tech"] .recommendation-card a {
+[data-theme="tech"] .recommendation-card__open {
   color: #061023;
   background: #68eaff;
   box-shadow: 0 0 18px rgba(83, 221, 255, 0.32);
@@ -4110,6 +4162,7 @@ button {
   min-height: 92px;
 }
 
+[data-theme="tech"] .chat-resource-strip a,
 [data-theme="tech"] .chat-resource-strip button,
 [data-theme="tech"] .starter-prompts button {
   max-width: 100%;

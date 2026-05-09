@@ -1,4 +1,5 @@
 import { stageLabels } from "./site-context";
+import { externalResourceHref } from "./resourceLinks";
 import {
   detectedFounderCommunities,
   hasAngelGroupIntent,
@@ -613,7 +614,7 @@ function mentionsBusinessBanking(goal: string) {
 function directLinkScore(link: string) {
   if (!link.trim()) return -40;
   try {
-    const url = new URL(link);
+    const url = new URL(externalResourceHref(link));
     const path = url.pathname.replace(/\/+$/, "");
     if (path && path !== "") return 8;
     if (url.search) return 4;

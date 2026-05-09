@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Bookmark, Filter, Search, SlidersHorizontal } from "lucide-react";
 import { fetchJson } from "@/lib/apiClient";
+import { externalResourceHref } from "@/lib/resourceLinks";
 import type { Facet, Resource, ResourceListResponse } from "@/lib/types";
 
 export function ResourceExplorer({
@@ -115,7 +116,12 @@ export function ResourceExplorer({
                 <Bookmark size={16} aria-hidden="true" />
                 Save
               </button>
-              <Link className="text-link" href={resource.link} target="_blank">
+              <Link
+                className="text-link"
+                href={externalResourceHref(resource.link)}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Open
                 <ArrowUpRight size={15} aria-hidden="true" />
               </Link>

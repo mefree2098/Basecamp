@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import {
-  ArrowRight,
   Bot,
   CheckCircle2,
   Circle,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 import { fetchJson } from "@/lib/apiClient";
 import { inferFounderProfileFromText } from "@/lib/founderInference";
+import { externalResourceHref, formatResourceUrl } from "@/lib/resourceLinks";
 import { useAuth } from "@/components/AuthContext";
 import type {
   AiSettings,
@@ -652,7 +652,12 @@ export function FounderNavigator({
           </span>
           <h2>{activeResource?.title ?? "Recommended pages open here"}</h2>
           {activeResource ? (
-            <a className="side-browser__url" href={activeResource.link} target="_blank">
+            <a
+              className="side-browser__url"
+              href={externalResourceHref(activeResource.link)}
+              target="_blank"
+              rel="noreferrer"
+            >
               <Link2 size={14} aria-hidden="true" />
               {formatResourceUrl(activeResource.link)}
               <ExternalLink size={14} aria-hidden="true" />
@@ -665,7 +670,23 @@ export function FounderNavigator({
         {activeResource ? (
           <>
             <div className="side-browser__frame" key={activeResource.link}>
-              <iframe src={activeResource.link} title={`${activeResource.title} page`} />
+              <iframe
+                src={externalResourceHref(activeResource.link)}
+                title={`${activeResource.title} page`}
+              />
+              <div className="side-browser__frame-fallback">
+                <strong>Preview blocked?</strong>
+                <span>Some public sites do not allow embedded pages.</span>
+                <a
+                  className="primary-button"
+                  href={externalResourceHref(activeResource.link)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open exact page
+                  <ExternalLink size={15} aria-hidden="true" />
+                </a>
+              </div>
             </div>
 
             <div className="side-browser__guide">
@@ -693,23 +714,34 @@ export function FounderNavigator({
         {activeRecommendations.length > 0 ? (
           <div className="recommendation-list recommendation-list--compact">
             {activeRecommendations.slice(0, compact ? 3 : 5).map((item) => (
-              <button
+              <article
                 className={
                   item.resource.id === activeResource?.id
                     ? "recommendation-card recommendation-card--active"
                     : "recommendation-card"
                 }
-                type="button"
                 key={item.resource.slug}
-                onClick={() => setActiveResourceId(item.resource.id)}
               >
-                <div>
+                <button
+                  className="recommendation-card__select"
+                  type="button"
+                  onClick={() => setActiveResourceId(item.resource.id)}
+                >
                   <span>{Math.round(item.score)} match</span>
                   <h3>{item.resource.title}</h3>
                   <p>{formatResourceUrl(item.resource.link)}</p>
-                </div>
-                <ArrowRight size={18} aria-hidden="true" />
-              </button>
+                </button>
+                <a
+                  className="recommendation-card__open"
+                  href={externalResourceHref(item.resource.link)}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${item.resource.title}`}
+                  onClick={() => setActiveResourceId(item.resource.id)}
+                >
+                  <ExternalLink size={18} aria-hidden="true" />
+                </a>
+              </article>
             ))}
           </div>
         ) : null}
@@ -773,15 +805,17 @@ function ConversationTurn({
         {linkedResources.length > 0 ? (
           <div className="chat-resource-strip">
             {linkedResources.map((resource) => (
-              <button
-                type="button"
+              <a
+                href={externalResourceHref(resource.link)}
+                target="_blank"
+                rel="noreferrer"
                 key={`${turn.id}-${resource.id}`}
                 className={resource.id === activeResourceId ? "active" : ""}
                 onClick={() => onSelectResource(resource.id)}
               >
                 <ExternalLink size={14} aria-hidden="true" />
                 {resource.title}
-              </button>
+              </a>
             ))}
           </div>
         ) : null}
@@ -1065,13 +1099,4 @@ function formatAssistantText(text: string) {
     .split(/\n{2,}|\n(?=(?:Done|Active|Queued):)|\n(?=\d+\.)/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
-}
-
-function formatResourceUrl(link: string) {
-  try {
-    const url = new URL(link);
-    return `${url.hostname}${url.pathname}${url.search}`.replace(/\/$/, "");
-  } catch {
-    return link;
-  }
 }
