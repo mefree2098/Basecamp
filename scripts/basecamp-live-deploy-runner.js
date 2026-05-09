@@ -14,13 +14,14 @@ const logPath = path.resolve(
   process.env.BASECAMP_DEPLOY_LOG_PATH || path.join(cwd, ".basecamp-data", "live-control", "deploy.log")
 );
 const serviceName = process.env.BASECAMP_SERVICE_NAME || "basecamp";
+const systemctlPath = process.env.BASECAMP_SYSTEMCTL_PATH || "/usr/bin/systemctl";
+const restartDelay = process.env.BASECAMP_RESTART_DELAY || "2s";
 
 const steps = [
   ["Fetch latest refs", "git", ["fetch", "origin", "main"]],
   ["Pull latest main", "git", ["pull", "--ff-only", "origin", "main"]],
   ["Install dependencies", "npm", ["ci", "--include=dev"]],
-  ["Build production app", "npm", ["run", "build"]],
-  ["Restart Basecamp service", "sudo", ["-n", "systemctl", "restart", serviceName]]
+  ["Build production app", "npm", ["run", "build"]]
 ];
 
 main();
@@ -41,9 +42,21 @@ function main() {
       run(command, args);
     }
 
+    const restartUnit = scheduleServiceRestart();
     const completedAt = new Date().toISOString();
-    writeStatus({ running: false, status: "completed", currentStep: "completed", completedAt, updatedAt: completedAt });
-    log(`\n[${completedAt}] Deploy ${jobId} completed successfully.`);
+    writeStatus({
+      running: false,
+      status: "completed",
+      currentStep: "restart scheduled",
+      completedAt,
+      updatedAt: completedAt,
+      restart: {
+        scheduled: true,
+        serviceName,
+        unit: restartUnit
+      }
+    });
+    log(`\n[${completedAt}] Deploy ${jobId} completed successfully. ${serviceName} restart scheduled as ${restartUnit}.`);
   } catch (error) {
     const failedAt = new Date().toISOString();
     writeStatus({
@@ -57,6 +70,43 @@ function main() {
     log(`\n[${failedAt}] Deploy ${jobId} failed: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
+}
+
+function scheduleServiceRestart() {
+  const label = "Schedule Basecamp service restart";
+  const stepStartedAt = new Date().toISOString();
+  const unitName = restartUnitName();
+  writeStatus({
+    running: true,
+    status: "running",
+    currentStep: label,
+    updatedAt: stepStartedAt,
+    restart: {
+      scheduled: false,
+      serviceName,
+      unit: unitName
+    }
+  });
+  log(`\n[${stepStartedAt}] ${label}`);
+  run("sudo", [
+    "-n",
+    "systemd-run",
+    "--unit",
+    unitName,
+    "--description",
+    `Restart ${serviceName} after Basecamp deploy ${jobId}`,
+    `--on-active=${restartDelay}`,
+    "--collect",
+    systemctlPath,
+    "restart",
+    serviceName
+  ]);
+  return unitName;
+}
+
+function restartUnitName() {
+  const safeJobId = jobId.replace(/[^a-zA-Z0-9-]/g, "-").slice(0, 64);
+  return `basecamp-restart-${safeJobId}`;
 }
 
 function run(command, args) {
