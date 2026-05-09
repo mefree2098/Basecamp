@@ -896,6 +896,14 @@ export function StartupMap({
     if (!bounds.isEmpty()) mapRef.current.fitBounds(bounds);
   }
 
+  function toggleMapMode() {
+    const nextMode = mapMode === "roadmap" ? "satellite" : "roadmap";
+    mapRef.current?.getStreetView().setVisible(false);
+    setStreetViewStatus("");
+    setMapMode(nextMode);
+    mapRef.current?.setMapTypeId(nextMode);
+  }
+
   async function openStreetView() {
     if (!selected || !selectedLocation || !streetViewServiceRef.current || !mapRef.current) return;
     setStreetViewStatus(`Finding Street View near ${selected.name}...`);
@@ -1162,7 +1170,7 @@ export function StartupMap({
             </button>
           </div>
 
-          <details className="map-view-menu">
+          <details className="map-view-menu" open>
             <summary>
               <Layers size={16} aria-hidden="true" />
               View
@@ -1180,7 +1188,7 @@ export function StartupMap({
               <button
                 type="button"
                 className="map-icon-control"
-                onClick={() => setMapMode((mode) => (mode === "roadmap" ? "satellite" : "roadmap"))}
+                onClick={toggleMapMode}
                 aria-label={mapMode === "roadmap" ? "Switch to satellite map" : "Switch to road map"}
               >
                 <Satellite size={17} aria-hidden="true" />
