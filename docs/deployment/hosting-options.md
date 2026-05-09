@@ -17,6 +17,7 @@ Use this when hosting on the shared NVIDIA Jetson behind HomeBrain's Caddy rever
 
 - Run the production server on `127.0.0.1:4302`.
 - Set `BASECAMP_PUBLIC_URL=https://basecamp.ntechr.com`.
+- Set a generated `BASECAMP_AUTH_SECRET` plus `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` when Google sign-in is enabled.
 - Store writable data at `/mnt/nvme/apps/Basecamp/.basecamp-data`.
 - Use `/api/healthz` as the HomeBrain reverse proxy health path.
 - Configure `BASECAMP_CODEX_TOKEN` to enable the confirmation-gated live-control API.

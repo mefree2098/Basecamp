@@ -14,6 +14,17 @@ type CommandResult = {
   error?: string;
 };
 
+const ALLOWED_ENV_UPDATE_KEYS = [
+  "BASECAMP_PUBLIC_URL",
+  "BASECAMP_AUTH_SECRET",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "GOOGLE_OAUTH_CLIENT_ID",
+  "GOOGLE_OAUTH_CLIENT_SECRET",
+  "BASECAMP_GOOGLE_CLIENT_ID",
+  "BASECAMP_GOOGLE_CLIENT_SECRET"
+] as const;
+
 export function authorizeBasecampLiveRequest(request: Request) {
   const configuredToken = liveToken();
   if (!configuredToken) {
@@ -165,11 +176,66 @@ export function restartBasecampService(confirm?: string) {
     };
   }
 
-  const result = runCommand("sudo", ["-n", "systemctl", "restart", serviceName()], deployCwd(), 15000);
+  const result = scheduleSystemdRestart();
   return {
     ok: result.ok,
-    status: result.ok ? 200 : 500,
-    body: { result }
+    status: result.ok ? 202 : 500,
+    body: {
+      scheduled: result.ok,
+      service: serviceName(),
+      result
+    }
+  };
+}
+
+export function updateBasecampRuntimeEnv(confirm?: string, updates?: Record<string, unknown>) {
+  if (confirm !== "env-update") {
+    return {
+      ok: false,
+      status: 400,
+      body: { error: "Environment update requires confirm=env-update." }
+    };
+  }
+
+  const normalizedUpdates = normalizeEnvUpdates(updates);
+  if (!normalizedUpdates.ok) return normalizedUpdates;
+
+  const envPath = runtimeEnvPath();
+  let current = "";
+  try {
+    current = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf8") : "";
+  } catch (error) {
+    return {
+      ok: false,
+      status: 500,
+      body: { error: error instanceof Error ? error.message : "Could not read the runtime env file." }
+    };
+  }
+
+  try {
+    fs.mkdirSync(path.dirname(envPath), { recursive: true });
+    const next = renderEnvFile(current, normalizedUpdates.updates);
+    fs.writeFileSync(envPath, next, { encoding: "utf8", mode: 0o600 });
+    fs.chmodSync(envPath, 0o600);
+  } catch (error) {
+    return {
+      ok: false,
+      status: 500,
+      body: { error: error instanceof Error ? error.message : "Could not write the runtime env file." }
+    };
+  }
+
+  return {
+    ok: true,
+    status: 200,
+    body: {
+      ok: true,
+      envFile: envPath,
+      updatedKeys: Object.keys(normalizedUpdates.updates),
+      values: Object.fromEntries(
+        Object.entries(normalizedUpdates.updates).map(([key, value]) => [key, previewEnvValue(key, value)])
+      )
+    }
   };
 }
 
@@ -189,6 +255,28 @@ function readGitState() {
     origin: remote.stdout.trim(),
     errors: [branch, commit, status, remote].filter((item) => !item.ok).map((item) => item.error || item.stderr)
   };
+}
+
+function scheduleSystemdRestart() {
+  const unitName = `${serviceName()}-manual-restart-${randomUUID().slice(0, 8)}`;
+  return runCommand(
+    "sudo",
+    [
+      "-n",
+      "systemd-run",
+      "--unit",
+      unitName,
+      "--description",
+      `Restart ${serviceName()} after Basecamp live-control request`,
+      "--on-active=2s",
+      "--collect",
+      "/usr/bin/systemctl",
+      "restart",
+      serviceName()
+    ],
+    deployCwd(),
+    15000
+  );
 }
 
 function runCommand(command: string, args: string[], cwd: string, timeoutMs = 5000): CommandResult {
@@ -230,8 +318,110 @@ function deployLogPath() {
   return process.env.BASECAMP_DEPLOY_LOG_PATH || path.join(liveControlDir(), "deploy.log");
 }
 
+function runtimeEnvPath() {
+  return process.env.BASECAMP_ENV_FILE || path.join(deployCwd(), ".env.production");
+}
+
 function serviceName() {
   return process.env.BASECAMP_SERVICE_NAME?.trim() || "basecamp";
+}
+
+function normalizeEnvUpdates(updates: Record<string, unknown> | undefined) {
+  if (!updates || typeof updates !== "object") {
+    return {
+      ok: false as const,
+      status: 400,
+      body: { error: "Environment update requires an updates object." }
+    };
+  }
+
+  const allowed = new Set<string>(ALLOWED_ENV_UPDATE_KEYS);
+  const normalized: Record<string, string> = {};
+  const rejected: string[] = [];
+  for (const [key, value] of Object.entries(updates)) {
+    if (!allowed.has(key)) {
+      rejected.push(key);
+      continue;
+    }
+    if (typeof value !== "string") {
+      return {
+        ok: false as const,
+        status: 400,
+        body: { error: `Environment value for ${key} must be a string.` }
+      };
+    }
+    const trimmedValue = value.trim();
+    if (!trimmedValue) {
+      return {
+        ok: false as const,
+        status: 400,
+        body: { error: `Environment value for ${key} cannot be empty.` }
+      };
+    }
+    if (trimmedValue.length > 4096 || /[\r\n]/.test(trimmedValue)) {
+      return {
+        ok: false as const,
+        status: 400,
+        body: { error: `Environment value for ${key} is not valid.` }
+      };
+    }
+    normalized[key] = trimmedValue;
+  }
+
+  if (rejected.length > 0) {
+    return {
+      ok: false as const,
+      status: 400,
+      body: {
+        error: "One or more environment keys cannot be changed through live control.",
+        rejectedKeys: rejected,
+        allowedKeys: ALLOWED_ENV_UPDATE_KEYS
+      }
+    };
+  }
+
+  if (Object.keys(normalized).length === 0) {
+    return {
+      ok: false as const,
+      status: 400,
+      body: { error: "No environment keys were provided." }
+    };
+  }
+
+  return {
+    ok: true as const,
+    updates: normalized
+  };
+}
+
+function renderEnvFile(current: string, updates: Record<string, string>) {
+  const seen = new Set<string>();
+  const lines = current ? current.split(/\r?\n/) : [];
+  const rendered = lines.map((line) => {
+    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);
+    const key = match?.[1];
+    if (!key || !(key in updates)) return line;
+    seen.add(key);
+    return `${key}=${formatEnvValue(updates[key])}`;
+  });
+
+  for (const [key, value] of Object.entries(updates)) {
+    if (!seen.has(key)) rendered.push(`${key}=${formatEnvValue(value)}`);
+  }
+
+  return `${rendered.join("\n").replace(/\n+$/, "")}\n`;
+}
+
+function formatEnvValue(value: string) {
+  if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(value)) return value;
+  return JSON.stringify(value);
+}
+
+function previewEnvValue(key: string, value: string) {
+  if (/SECRET|TOKEN|PASS|KEY/i.test(key)) {
+    return value.length <= 8 ? "configured" : `${value.slice(0, 4)}...${value.slice(-4)}`;
+  }
+  return value;
 }
 
 function liveToken() {

@@ -5,7 +5,8 @@ import {
   readBasecampLiveOverview,
   readBasecampLogs,
   restartBasecampService,
-  startBasecampDeploy
+  startBasecampDeploy,
+  updateBasecampRuntimeEnv
 } from "@/lib/liveControl";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,11 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json(result.body, { status: result.status });
   }
 
+  if (action === "env-update") {
+    const result = updateBasecampRuntimeEnv(confirm, body?.updates);
+    return NextResponse.json(result.body, { status: result.status });
+  }
+
   return NextResponse.json({ error: `Unsupported Basecamp live action: ${action}` }, { status: 404 });
 }
 
@@ -74,7 +80,7 @@ async function actionFromContext(context: RouteContext) {
 
 async function readJsonBody(request: Request) {
   try {
-    return (await request.json()) as { confirm?: string };
+    return (await request.json()) as { confirm?: string; updates?: Record<string, unknown> };
   } catch {
     return null;
   }

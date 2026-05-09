@@ -53,6 +53,17 @@ async function main() {
     );
   }
 
+  if (command === "env-update") {
+    const confirm = flagValue(args, "--confirm");
+    const body = await readStdinJson();
+    return printJson(
+      await liveFetch(config, `/api/codex/live/env-update?confirm=${encodeURIComponent(confirm || "")}`, {
+        method: "POST",
+        body: JSON.stringify({ ...body, confirm })
+      })
+    );
+  }
+
   if (command === "request") {
     const requestPath = args[0];
     if (!requestPath?.startsWith("/")) {
@@ -123,6 +134,20 @@ function parseJson(text) {
   } catch {
     return null;
   }
+}
+
+async function readStdinJson() {
+  if (process.stdin.isTTY) {
+    throw new Error("env-update requires a JSON body on stdin, for example: {\"updates\":{\"BASECAMP_PUBLIC_URL\":\"https://...\"}}");
+  }
+  const chunks = [];
+  for await (const chunk of process.stdin) chunks.push(chunk);
+  const text = Buffer.concat(chunks).toString("utf8").trim();
+  const payload = parseJson(text);
+  if (!payload || typeof payload !== "object") {
+    throw new Error("env-update stdin must be a JSON object.");
+  }
+  return payload;
 }
 
 function printJson(value) {

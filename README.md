@@ -22,7 +22,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-The app works without external credentials, but Google Maps, geocoding, SMTP email, and hosted AI providers are enabled through environment variables.
+The app works without external credentials, but Google OAuth, Google Maps, geocoding, SMTP email, and hosted AI providers are enabled through environment variables.
 
 ## Environment
 
@@ -32,7 +32,11 @@ Key settings:
 
 ```bash
 BASECAMP_STORAGE_DIR=.basecamp-data
+BASECAMP_PUBLIC_URL=http://localhost:3000
+BASECAMP_AUTH_SECRET=
 
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=
 NEXT_PUBLIC_GOOGLE_MAPS_TECH_MAP_ID=
@@ -42,7 +46,6 @@ BASECAMP_GEOCODE_BATCH_SIZE=260
 BASECAMP_ICON_BATCH_SIZE=32
 BASECAMP_ICON_CONCURRENCY=10
 
-BASECAMP_PUBLIC_URL=http://localhost:3000
 BASECAMP_EMAIL_PROVIDER=smtp
 BASECAMP_EMAIL_FROM=basecamp@ntechr.com
 BASECAMP_SMTP_HOST=mail.freestonefamily.com

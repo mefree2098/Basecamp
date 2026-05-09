@@ -72,6 +72,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const signIn = useCallback(async (input: SignInInput) => {
+    if (input.provider === "google" && typeof window !== "undefined") {
+      const returnTo =
+        `${window.location.pathname}${window.location.search}${window.location.hash}` || "/profile";
+      window.location.assign(`/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`);
+      return new Promise<SignInResponse>(() => {
+        // The browser is navigating to Google OAuth, so callers should not continue the mock flow.
+      });
+    }
+
     const response = await fetch("/api/auth/sign-in", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
