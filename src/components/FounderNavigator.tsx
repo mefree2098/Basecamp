@@ -492,6 +492,7 @@ export function FounderNavigator({
                       className={session.id === activeSession?.id ? "ghost-button active" : "ghost-button"}
                       type="button"
                       key={session.id}
+                      title={session.title}
                       onClick={() => void restoreSession(session)}
                     >
                       {session.title}
@@ -1054,9 +1055,14 @@ function providerLabel(provider: AuthProviderId) {
 }
 
 function formatAssistantText(text: string) {
-  const cleaned = text.replace(/\*\*/g, "").replace(/\s*\[resource:[^\]]+\]/g, "");
+  const cleaned = text
+    .replace(/\*\*/g, "")
+    .replace(/\s*\[resource:[^\]]+\]/g, "")
+    .replace(/\s+(Done:)/g, "\n\n$1")
+    .replace(/\s+(Active:)/g, "\n$1")
+    .replace(/\s+(Queued:)/g, "\n$1");
   return cleaned
-    .split(/\n{2,}|\n(?=\d+\.)/)
+    .split(/\n{2,}|\n(?=(?:Done|Active|Queued):)|\n(?=\d+\.)/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
 }
