@@ -5,7 +5,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const jobId = process.env.BASECAMP_DEPLOY_ID || `${Date.now()}`;
-const cwd = path.resolve(process.env.BASECAMP_DEPLOY_CWD || process.cwd());
+const requestedCwd = path.resolve(process.env.BASECAMP_DEPLOY_CWD || process.cwd());
+const cwd = resolveDeployCwd(requestedCwd);
 const statusPath = path.resolve(
   process.env.BASECAMP_DEPLOY_STATUS_PATH || path.join(cwd, ".basecamp-data", "live-control", "deploy-status.json")
 );
@@ -102,4 +103,36 @@ function readStatus() {
 
 function log(message) {
   fs.appendFileSync(logPath, `${message}\n`, "utf8");
+}
+
+function resolveDeployCwd(startDir) {
+  const explicitRoot = process.env.BASECAMP_REPO_CWD || process.env.BASECAMP_PROJECT_ROOT;
+  if (explicitRoot && fs.existsSync(path.join(explicitRoot, "package.json"))) {
+    return path.resolve(explicitRoot);
+  }
+
+  const standaloneRoot = rootBeforeStandalone(startDir);
+  if (standaloneRoot && isUsableSourceRoot(standaloneRoot)) {
+    return standaloneRoot;
+  }
+
+  return startDir;
+}
+
+function rootBeforeStandalone(startDir) {
+  const segments = path.resolve(startDir).split(path.sep);
+  for (let index = segments.length - 2; index >= 0; index -= 1) {
+    if (segments[index] === ".next" && segments[index + 1] === "standalone") {
+      return segments.slice(0, index).join(path.sep) || path.sep;
+    }
+  }
+  return null;
+}
+
+function isUsableSourceRoot(candidate) {
+  return (
+    fs.existsSync(path.join(candidate, ".git")) &&
+    fs.existsSync(path.join(candidate, "package.json")) &&
+    fs.existsSync(path.join(candidate, "src"))
+  );
 }

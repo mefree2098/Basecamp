@@ -13,6 +13,7 @@ if (!fs.existsSync(standaloneDir)) {
 
 copyTree(path.join(root, "public"), path.join(standaloneDir, "public"));
 copyTree(path.join(root, ".next", "static"), path.join(standaloneDir, ".next", "static"));
+fs.rmSync(path.join(standaloneDir, ".git"), { recursive: true, force: true });
 
 console.log("Prepared standalone public and static assets.");
 
