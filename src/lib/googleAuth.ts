@@ -6,6 +6,7 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 const GOOGLE_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const BASECAMP_NATIVE_GOOGLE_CALLBACK_URL = "basecamputah://auth/google";
 
 export const BASECAMP_GOOGLE_OAUTH_STATE_COOKIE = "basecamp.google_oauth_state";
 
@@ -112,6 +113,33 @@ export function verifyGoogleOAuthState(state: string | null | undefined, nonce: 
 
 export function googleOAuthAppUrl(path: string, requestUrl: string) {
   return new URL(path, publicBaseUrl(requestUrl));
+}
+
+export function isNativeGoogleOAuthReturnTo(returnTo: string) {
+  try {
+    const url = new URL(returnTo);
+    return url.protocol === "basecamputah:" && url.host === "auth" && url.pathname === "/google";
+  } catch {
+    return false;
+  }
+}
+
+export function googleOAuthNativeCallbackUrl(
+  returnTo: string,
+  result:
+    | { token: string; expiresAt: string; userId: string; error?: never }
+    | { error: string; token?: never; expiresAt?: never; userId?: never }
+) {
+  const url = new URL(isNativeGoogleOAuthReturnTo(returnTo) ? returnTo : BASECAMP_NATIVE_GOOGLE_CALLBACK_URL);
+  url.search = "";
+  if (typeof result.error === "string") {
+    url.searchParams.set("error", result.error);
+  } else {
+    url.searchParams.set("token", result.token);
+    url.searchParams.set("expiresAt", result.expiresAt);
+    url.searchParams.set("userId", result.userId);
+  }
+  return url;
 }
 
 export async function exchangeGoogleCodeForProfile({
@@ -264,6 +292,7 @@ function authSecret() {
 function normalizeReturnTo(value: string | null | undefined) {
   if (!value) return "/profile";
   try {
+    if (isNativeGoogleOAuthReturnTo(value)) return BASECAMP_NATIVE_GOOGLE_CALLBACK_URL;
     if (!value.startsWith("/") || value.startsWith("//")) return "/profile";
     const parsed = new URL(value, "https://basecamp.local");
     return `${parsed.pathname}${parsed.search}${parsed.hash}` || "/profile";

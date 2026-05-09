@@ -3,7 +3,9 @@ import {
   createGoogleOAuthRequest,
   googleOAuthAppUrl,
   googleOAuthConfigStatus,
+  googleOAuthNativeCallbackUrl,
   googleOAuthRedirectUri,
+  isNativeGoogleOAuthReturnTo,
   verifyGoogleOAuthState
 } from "@/lib/googleAuth";
 
@@ -73,6 +75,31 @@ describe("Google OAuth helpers", () => {
     });
 
     expect(verifyGoogleOAuthState(request.state, request.nonce).returnTo).toBe("/profile");
+  });
+
+  it("allows the native iOS callback scheme while stripping query input", () => {
+    const request = createGoogleOAuthRequest({
+      requestUrl: "https://basecamp.example/api/auth/google/start",
+      returnTo: "basecamputah://auth/google?token=bad"
+    });
+
+    const verified = verifyGoogleOAuthState(request.state, request.nonce);
+    expect(verified.returnTo).toBe("basecamputah://auth/google");
+    expect(isNativeGoogleOAuthReturnTo(verified.returnTo)).toBe(true);
+  });
+
+  it("builds native callback URLs with session or error query params", () => {
+    expect(
+      googleOAuthNativeCallbackUrl("basecamputah://auth/google", {
+        token: "session-token",
+        expiresAt: "2026-06-01T00:00:00.000Z",
+        userId: "user_123"
+      }).href
+    ).toBe("basecamputah://auth/google?token=session-token&expiresAt=2026-06-01T00%3A00%3A00.000Z&userId=user_123");
+
+    expect(googleOAuthNativeCallbackUrl("basecamputah://auth/google", { error: "google_error" }).href).toBe(
+      "basecamputah://auth/google?error=google_error"
+    );
   });
 
   it("reports missing config without exposing values", () => {

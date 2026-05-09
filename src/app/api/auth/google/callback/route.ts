@@ -4,6 +4,8 @@ import {
   exchangeGoogleCodeForProfile,
   googleOAuthAppUrl,
   googleOAuthErrorSummary,
+  googleOAuthNativeCallbackUrl,
+  isNativeGoogleOAuthReturnTo,
   verifyGoogleOAuthState
 } from "@/lib/googleAuth";
 import {
@@ -20,10 +22,12 @@ export async function GET(request: Request) {
   const state = url.searchParams.get("state");
   const nonce = cookieValue(request.headers.get("cookie"), BASECAMP_GOOGLE_OAUTH_STATE_COOKIE);
   const fallbackRedirect = googleOAuthAppUrl("/profile?auth=google_error", request.url);
+  let verifiedReturnTo: string | null = null;
 
   try {
     if (!code) throw new Error("Google did not return an authorization code.");
     const verifiedState = verifyGoogleOAuthState(state, nonce);
+    verifiedReturnTo = verifiedState.returnTo;
     const profile = await exchangeGoogleCodeForProfile({ code, requestUrl: request.url });
     const user = registerFounderUser({
       name: profile.name,
@@ -32,7 +36,10 @@ export async function GET(request: Request) {
       avatarUrl: profile.avatarUrl
     });
     const { token, expiresAt } = createFounderAuthSession(user.id);
-    const response = NextResponse.redirect(googleOAuthAppUrl(verifiedState.returnTo, request.url));
+    const redirectTarget = isNativeGoogleOAuthReturnTo(verifiedState.returnTo)
+      ? googleOAuthNativeCallbackUrl(verifiedState.returnTo, { token, expiresAt, userId: user.id })
+      : googleOAuthAppUrl(verifiedState.returnTo, request.url);
+    const response = NextResponse.redirect(redirectTarget);
     response.cookies.set(BASECAMP_AUTH_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
@@ -44,7 +51,11 @@ export async function GET(request: Request) {
     return response;
   } catch (error) {
     console.warn("Google OAuth callback failed", googleOAuthErrorSummary(error));
-    const response = NextResponse.redirect(fallbackRedirect);
+    const redirectTarget =
+      verifiedReturnTo && isNativeGoogleOAuthReturnTo(verifiedReturnTo)
+        ? googleOAuthNativeCallbackUrl(verifiedReturnTo, { error: "google_error" })
+        : fallbackRedirect;
+    const response = NextResponse.redirect(redirectTarget);
     clearGoogleStateCookie(response);
     return response;
   }
